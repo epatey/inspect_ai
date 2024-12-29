@@ -25,4 +25,5 @@ shortuuid
 tenacity
 textual>=0.86.2
 typing_extensions>=4.9.0
+vncdotool>=1.2.0  # temporary until docker.exec is implemented
 zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability

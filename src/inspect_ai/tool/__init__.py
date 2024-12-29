@@ -3,17 +3,18 @@ from inspect_ai._util.deprecation import relocated_module_attribute
 
 from ._tool import Tool, ToolError, ToolResult, tool
 from ._tool_call import (
-    ToolCall,
-    ToolCallContent,
-    ToolCallError,
-    ToolCallView,
-    ToolCallViewer,
+                         ToolCall,
+                         ToolCallContent,
+                         ToolCallError,
+                         ToolCallView,
+                         ToolCallViewer,
 )
 from ._tool_choice import ToolChoice, ToolFunction
 from ._tool_def import ToolDef
 from ._tool_info import ToolInfo
 from ._tool_params import ToolParam, ToolParams
 from ._tool_with import tool_with
+from ._tools._computer import computer, computer_split
 from ._tools._execute import bash, python
 from ._tools._web_browser import web_browser
 from ._tools._web_search import web_search
@@ -23,6 +24,8 @@ __all__ = [
     "python",
     "web_browser",
     "web_search",
+    "computer",
+    "computer_split",
     "tool",
     "tool_with",
     "Tool",
