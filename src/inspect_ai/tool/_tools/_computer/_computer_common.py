@@ -21,11 +21,14 @@ log.setLevel(logging.DEBUG)
 # TODO: Export ToolResult from inspect_ai.tool
 ToolResult = str | int | float | bool | list[Content]
 
+
 class ShellExecSuccessResult(BaseModel):
     output: str | None = Field(default=None)
     base64_image: str | None = Field(default=None)
 
+
 hackIsFirstCommand = True
+
 
 async def _send_cmd(cmdTail: list[str]) -> ToolResult:
     # TODO: Resolve this issue
@@ -37,9 +40,9 @@ async def _send_cmd(cmdTail: list[str]) -> ToolResult:
         if not stallResult.success:
             log.error(f"First sandbox().exec() failed with: {stallResult.stderr}")
             raise ToolError(f"Error executing command: {stallResult.stderr}")
-        log.debug(f"First sandbox().exec() succeeded...sleeping")
+        log.debug("First sandbox().exec() succeeded...sleeping")
         await asyncio.sleep(20)
-        log.debug(f"Stall done")
+        log.debug("Stall done")
         hackIsFirstCommand = False
 
     cmd = ["python", "computer_tool_support/cli.py", "--action"] + cmdTail
@@ -62,58 +65,71 @@ async def _send_cmd(cmdTail: list[str]) -> ToolResult:
         if result.base64_image:
             random_filename = f"{uuid.uuid4()}.png"
             output_path = os.path.join("/tmp/output", random_filename)
-            
+
             # Decode the base64 image and save it to the file
             with open(output_path, "wb") as image_file:
                 image_file.write(base64.b64decode(result.base64_image))
 
-        image = ContentImage(image=f"data:image/png;base64,{result.base64_image}") if result.base64_image else None
+        image = (
+            ContentImage(image=f"data:image/png;base64,{result.base64_image}")
+            if result.base64_image
+            else None
+        )
         text = result.output if result.output and len(result.output) > 0 else None
 
-        if not text is None and not image is None:
+        if text is not None and image is not None:
             log.debug(f"ToolResult([ContentText('{text}'), ContentImage])")
             return [ContentText(text=text), image]
 
-        if not text is None:
+        if text is not None:
             log.debug(f"ToolResult('{text}')")
             return text
-        
+
         if image is not None:
-            log.debug(f"ToolResult([ContentImage])")
+            log.debug("ToolResult([ContentImage])")
             return [image]
 
-        log.debug(f"Tool returned neither output nor image - returning ToolResult('OK')")
+        log.debug("Tool returned neither output nor image - returning ToolResult('OK')")
         return "OK"
     except Exception as e:
         log.error(f"Sandbox.exec threw for {cmd}...re-raising")
         raise e
 
+
 async def cursor_position() -> str:
     # TODO: Code me
     return "100 100"
 
+
 async def screenshot() -> ToolResult:
     return await _send_cmd(["screenshot"])
+
 
 async def mouse_move(x: int, y: int) -> ToolResult:
     return await _send_cmd(["mouse_move", "--coordinate", f"{x}", f"{y}"])
 
+
 async def left_click() -> ToolResult:
     return await _send_cmd(["left_click"])
 
-async def left_click_drag( x: int, y: int) -> ToolResult:
+
+async def left_click_drag(x: int, y: int) -> ToolResult:
     return await _send_cmd(["left_click_drag", "--coordinate", f"{x}", f"{y}"])
+
 
 async def right_click() -> ToolResult:
     return await _send_cmd(["right_click"])
 
+
 async def middle_click() -> ToolResult:
     return await _send_cmd(["middle_click"])
+
 
 async def double_click() -> ToolResult:
     return await _send_cmd(["double_click"])
 
-async def press_key( key: str) -> ToolResult:
+
+async def press_key(key: str) -> ToolResult:
     # TODO: Temporary partial fix for lack of escaping of user input
     # When the model wants to key "*", it turns into a command line
     # ending in "-- *", which expands to a list of all files and folders
@@ -123,7 +139,6 @@ async def press_key( key: str) -> ToolResult:
     res = await _send_cmd(["key", "--text", key])
     return res
 
-async def type( text: str) -> ToolResult:
+
+async def type(text: str) -> ToolResult:
     return await _send_cmd(["type", "--text", text])
-
-

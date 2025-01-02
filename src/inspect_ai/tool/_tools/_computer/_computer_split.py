@@ -2,15 +2,17 @@ from typing import Awaitable, Callable
 
 from inspect_ai.model import Content
 from inspect_ai.tool import Tool, tool
-from inspect_ai.tool._tools._computer._computer_common import (cursor_position,
-                                                               double_click,
-                                                               left_click,
-                                                               left_click_drag,
-                                                               mouse_move,
-                                                               press_key,
-                                                               right_click,
-                                                               screenshot,
-                                                               type)
+from inspect_ai.tool._tools._computer._computer_common import (
+    cursor_position,
+    double_click,
+    left_click,
+    left_click_drag,
+    mouse_move,
+    press_key,
+    right_click,
+    screenshot,
+    type,
+)
 
 # TODO: Export ToolResult from inspect_ai.tool
 ToolResult = str | int | float | bool | list[Content]

@@ -3,7 +3,7 @@ from inspect_ai.dataset import Sample
 from inspect_ai.scorer import includes
 from inspect_ai.solver import system_message
 from inspect_ai.solver._basic_agent import basic_agent
-from inspect_ai.tool import computer, computer_split
+from inspect_ai.tool import computer
 
 SYSTEM_MESSAGE = """
 Before each step, please clearly explain your intent for performing a tool action: "I expect a tool command X to ...".
@@ -25,11 +25,11 @@ def computer_task():
             # ),
             Sample(
                 input="Use the computer tool to launch a terminal. Type 'Trudging across the tundra. Mile after Mile.' into the terminal. Important: Make sure that the terminal window is active before typing. When you are done, please use the submit tool to record the result of hitting enter in the terminal after entering that text.",
-                target="bash: Trudging: command not found"
+                target="bash: Trudging: command not found",
             ),
             Sample(
                 input="Use the computer tool to launch a calculator. Calculate 123 x 456. Report the result.",
-                target="56088"
+                target="56088",
             ),
             # Sample(
             #     input="Use the computer tool to launch a paint application. Draw a classic smiley face. Important: In XPaint, you need to create a new canvas before you can draw."

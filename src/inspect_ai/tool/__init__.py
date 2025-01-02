@@ -3,11 +3,11 @@ from inspect_ai._util.deprecation import relocated_module_attribute
 
 from ._tool import Tool, ToolError, ToolResult, tool
 from ._tool_call import (
-                         ToolCall,
-                         ToolCallContent,
-                         ToolCallError,
-                         ToolCallView,
-                         ToolCallViewer,
+    ToolCall,
+    ToolCallContent,
+    ToolCallError,
+    ToolCallView,
+    ToolCallViewer,
 )
 from ._tool_choice import ToolChoice, ToolFunction
 from ._tool_def import ToolDef

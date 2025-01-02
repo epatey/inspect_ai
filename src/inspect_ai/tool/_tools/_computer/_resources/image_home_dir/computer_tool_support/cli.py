@@ -11,28 +11,35 @@ from _tool_result import ToolResult
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Execute computer tool action")
-    parser.add_argument('--action', type=str, required=True, help='Action to perform')
-    parser.add_argument('--text', type=str, help='Optional text parameter')
-    parser.add_argument('--coordinate', type=int, nargs=2, help='Optional coordinate parameter as a list of two integers')
+    parser.add_argument("--action", type=str, required=True, help="Action to perform")
+    parser.add_argument("--text", type=str, help="Optional text parameter")
+    parser.add_argument(
+        "--coordinate",
+        type=int,
+        nargs=2,
+        help="Optional coordinate parameter as a list of two integers",
+    )
     return parser.parse_args()
+
 
 async def execute_action(args) -> ToolResult:
     computer = ComputerTool()
     return await computer(
         action=args.action,
         text=args.text,
-        coordinate=args.coordinate if args.coordinate else None
+        coordinate=args.coordinate if args.coordinate else None,
     )
 
+
 def main():
-    log_dir = os.path.expanduser('~/.log')
+    log_dir = os.path.expanduser("~/.log")
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
     logging.basicConfig(
-      filename=os.path.join(log_dir, 'cli.log'),
-      filemode='a',
-      format='%(asctime)s - %(levelname)s - %(message)s',
-    level=logging.DEBUG
+        filename=os.path.join(log_dir, "cli.log"),
+        filemode="a",
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        level=logging.DEBUG,
     )
 
     try:
@@ -43,15 +50,20 @@ def main():
         if result.error:
             raise Exception(result.error)
 
-        print(json.dumps({
-            "output": result.output,
-            "base64_image": result.base64_image,
-        }))
+        print(
+            json.dumps(
+                {
+                    "output": result.output,
+                    "base64_image": result.base64_image,
+                }
+            )
+        )
         logging.info(f"Execution of {args} successful")
     except Exception as e:
         logging.error(f"An error occurred: {e}")
         print(f"An error occurred: {e}", file=sys.stderr)
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

@@ -35,6 +35,7 @@ class ToolError(Exception):
     def __init__(self, message):
         self.message = message
 
+
 class Resolution(TypedDict):
     width: int
     height: int
@@ -64,7 +65,7 @@ def chunks(s: str, chunk_size: int) -> list[str]:
     return [s[i : i + chunk_size] for i in range(0, len(s), chunk_size)]
 
 
-class ComputerTool():
+class ComputerTool:
     """
     A tool that allows the agent to interact with the screen, keyboard, and mouse of the current computer.
 
@@ -227,7 +228,13 @@ class ComputerTool():
         logging.debug(f"running shell command {command}")
         _, stdout, stderr = await run(command)
         logging.debug(f"shell command returned stdout: {stdout}, stderr: {stderr}")
-        return ToolResult(output=stdout, error=stderr, base64_image=(await self.take_screenshot_after_delay()) if take_screenshot else None)
+        return ToolResult(
+            output=stdout,
+            error=stderr,
+            base64_image=(await self.take_screenshot_after_delay())
+            if take_screenshot
+            else None,
+        )
 
     async def take_screenshot_after_delay(self) -> str:
         # delay to let things settle before taking a screenshot
