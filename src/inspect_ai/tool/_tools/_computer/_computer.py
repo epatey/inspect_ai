@@ -28,20 +28,11 @@ def computer(timeout: int | None = None) -> Tool:
     """
     Computer interaction tool.
 
-    Use a mouse and keyboard to interact with a computer, and take screenshots.
-      * This is an interface to a desktop GUI. You must click on desktop menus or icons to start applications.
-      * Before taking any action, it's wise to consult the result of a screenshot action to determine current state
-      of the computer. Without doing so, you may not be able to complete the task.
-
     Args:
       timeout (int | None): Timeout (in seconds) for command.
 
-    Important:
-    - When attempting to click on an element, move the mouse to the middle of the element before clicking. This will help ensure that the click is registered.
-    - Keep in mind that icons require double clicks to open while other UI affordances like menu items and buttons require a single click.
-
     Returns:
-      Image for each screenshot command executed.
+      Computer interaction tool.
     """
 
     async def execute(cmd: str) -> ToolResult:

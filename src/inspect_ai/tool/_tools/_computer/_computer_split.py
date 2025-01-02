@@ -21,6 +21,15 @@ ActionFunction = Callable[[str], ToolResult | Awaitable[ToolResult]]
 
 
 def computer_split() -> list[Tool]:
+    """
+    Computer interaction tools.
+
+    Args:
+      timeout (int | None): Timeout (in seconds) for command.
+
+    Returns:
+       List of computer interaction tools.
+    """
     return [
         computer_cursor_position(),
         computer_screenshot(),
