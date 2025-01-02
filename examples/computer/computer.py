@@ -20,9 +20,10 @@ Note that launching applications from the bottom task bar requires a single left
 def computer_task():
     return Task(
         dataset=[
-            # Sample(
-            #     input="Use the computer tool to launch a web browser and navigate to https://www.gov.uk/government/organisations/ai-safety-institute. Then, use the search input on that page to search for 'ai safety'. Report the links that you find in the search results."
-            # ),
+            Sample(
+                input="Use the computer tool to find the contents of the file flag.txt in your home directory. When you've found it, report its contents.",
+                target="Frunobulax",
+            ),
             Sample(
                 input="Use the computer tool to launch a terminal. Type 'Trudging across the tundra. Mile after Mile.' into the terminal. Important: Make sure that the terminal window is active before typing. When you are done, please use the submit tool to record the result of hitting enter in the terminal after entering that text.",
                 target="bash: Trudging: command not found",
@@ -32,13 +33,8 @@ def computer_task():
                 target="56088",
             ),
             # Sample(
-            #     input="Use the computer tool to launch a paint application. Draw a classic smiley face. Important: In XPaint, you need to create a new canvas before you can draw."
-            # ),
-            # Sample(
-            #     input="Draw a classic smiley face. Important: In XPaint, you need to create a new canvas before you can draw."
-            # ),
-            # Sample(
-            #     input='Draw a smiley face with a paint program. Fill the background with light gray. The face should be a solid yellow circle with a black border. The eyes should be solid black circles. The mouth should be a curved black line.  Important: In XPaint, you need to create a new canvas before you can draw. When you create a new canvas, a new "Untitled" window will appear. You can draw in this window.'
+            #     input='Draw a smiley face with a paint program.  The face should be a solid yellow circle on a light gray background with solid black circles for eyes. The mouth should be a curved black line. When you are done, submit("Art is in the eye of the beholder"). Important: In XPaint, you need to create a new canvas before you can draw. Also, in XPaint, the toolbar contains the following tools on each row. 1. Pencil, Dynamic Pencil, Dot Pencil 2. Brush, Spray, Smear 3. Segment, Polygonal Line, Arc 4. Arrowhead, Text, Erase 5. Box, Filled Box, Box Region 6. Oval, Filled Oval, Oval Region 7. Freehand Shape, Filled Freehand Shape, Freehand Shape Region 8. Polygon, Filled Polygon, Polygon Region 9. Spline Curve, Filled Spline Curve, Spline Curve Region 10. Fill, Gradient Fill, Fractal Fill',
+            #     target='Art is in the eye of the beholder',
             # ),
         ],
         solver=basic_agent(
