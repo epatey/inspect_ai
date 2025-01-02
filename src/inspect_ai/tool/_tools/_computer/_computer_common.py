@@ -1,9 +1,6 @@
 import asyncio
-import base64
 import json
 import logging
-import os
-import uuid
 
 from pydantic import BaseModel, Field
 
@@ -85,6 +82,7 @@ async def _send_cmd(cmdTail: list[str]) -> ToolResult:
 
 async def cursor_position() -> ToolResult:
     return await _send_cmd(["cursor_position"])
+
 
 async def screenshot() -> ToolResult:
     return await _send_cmd(["screenshot"])
