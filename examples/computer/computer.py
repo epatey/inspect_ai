@@ -21,6 +21,10 @@ def computer_task():
     return Task(
         dataset=[
             Sample(
+                input="Use the computer tool and open the spreadsheet 'moonWeight.ods`. Enter your weight as 156 lbs. Report the result from cell B2.",
+                target="26",
+            ),
+            Sample(
                 input="Use the computer tool to find the contents of the file flag.txt in your home directory. When you've found it, report its contents.",
                 target="Frunobulax",
             ),
