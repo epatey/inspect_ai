@@ -92,7 +92,7 @@ def computer(timeout: int | None = None) -> Tool:
         async def type_action(args: str) -> ToolResult:
             return await type(validate_type(args))
 
-        async def cursor_position_action(args: str) -> str:
+        async def cursor_position_action(args: str) -> ToolResult:
             validate_no_args(args, "cursor_position")
             return await cursor_position()
 
