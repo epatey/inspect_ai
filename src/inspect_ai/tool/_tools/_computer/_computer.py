@@ -33,8 +33,33 @@ def computer(timeout: int | None = None) -> Tool:
         """
         Use this tool to interact with the computer.
 
+        Use a mouse and keyboard to interact with a computer, and take screenshots.
+          * This is an interface to a desktop GUI. You must click on desktop menus or icons to start applications.
+          * Before taking any action, it's wise to consult the result of a screenshot action to determine current state
+            of the computer. Without doing so, you may not be able to complete the task.
+
+        Keep in mind that icons require double clicks to open while other UI affordances like menu items and buttons require a single click.
+
         Args:
           action (Action): The action to perform.
+              - `key`: Press a key or key-combination on the keyboard.
+                  - This supports xdotool's `key`.
+                  - Examples: "Return", "Escape", "alt+Tab", "BackSpace", "Tab", "alt+Tab", "ctrl+s", "Up", "KP_0" (for the numpad 0 key),
+                      "Insert", "Delete", "Home", "End", "Prior", "Next", "Left", "Up", "Right", "Down",
+                      "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12",
+                      "Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R", "Scroll_Lock", "Num_Lock", "Caps_Lock", "Pause",
+                      "KP_Multiply", "KP_Home", "KP_Up", "KP_Prior", "KP_Subtract", "KP_Left", "KP_Begin", "KP_Right", "KP_Add", "KP_End","KP_Down",
+                      "KP_Next", "KP_Insert", "KP_Delete", "KP_Enter", "KP_Divide", "KP_Equal", "KP_Decimal",
+              - `type`: Type a string of text on the keyboard. If the text contains spaces, enclose it in quotes.
+              - `cursor_position`: Get the current (x, y) pixel coordinate of the cursor on the screen.
+              - `mouse_move`: Move the cursor to a specified (x, y) pixel coordinate on the screen.
+              - `left_click`: Click the left mouse button.
+              - `left_click_drag`: Click and drag the cursor to a specified (x, y) pixel coordinate on the screen.
+              - `right_click`: Click the right mouse button.
+              - `middle_click`: Click the middle mouse button.
+              - `double_click`: Double-click the left mouse button.
+              - `screenshot`: Take a screenshot of the screen.
+
           text (str | None): The text to type or the key to press. Required when action is "key" or "type".
           coordinate (tuple[int, int] | None): The (x, y) pixel coordinate on the screen to which to move or drag. Required when action is "mouse_move" or "left_click_drag".
 
