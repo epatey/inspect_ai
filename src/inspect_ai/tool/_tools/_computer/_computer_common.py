@@ -51,24 +51,11 @@ async def _send_cmd(cmdTail: list[str]) -> ToolResult:
     try:
         raw_exec_result = await sandbox().exec(cmd)
 
-        # with open(f"{cmd[3]}_result.txt", "w") as file:
-        #   file.write(raw_exec_result.stdout)
-
         if not raw_exec_result.success:
             log.error(f"Execution failed with: {raw_exec_result.stderr[:50]}...")
             raise ToolError(f"Error executing command: ${cmd} {raw_exec_result.stderr}")
 
         result = ShellExecSuccessResult(**json.loads(raw_exec_result.stdout))
-
-        # TODO: Remove this code
-        # save the image to a file for debugging
-        if result.base64_image:
-            random_filename = f"{uuid.uuid4()}.png"
-            output_path = os.path.join("/tmp/output", random_filename)
-
-            # Decode the base64 image and save it to the file
-            with open(output_path, "wb") as image_file:
-                image_file.write(base64.b64decode(result.base64_image))
 
         image = (
             ContentImage(image=f"data:image/png;base64,{result.base64_image}")
@@ -96,10 +83,8 @@ async def _send_cmd(cmdTail: list[str]) -> ToolResult:
         raise e
 
 
-async def cursor_position() -> str:
-    # TODO: Code me
-    return "100 100"
-
+async def cursor_position() -> ToolResult:
+    return await _send_cmd(["cursor_position"])
 
 async def screenshot() -> ToolResult:
     return await _send_cmd(["screenshot"])
