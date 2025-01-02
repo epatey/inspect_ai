@@ -1,3 +1,7 @@
+"""
+Based on https://github.com/anthropics/anthropic-quickstarts/blob/main/computer-use-demo/computer_use_demo/tools/computer.py
+"""
+
 import asyncio
 import base64
 import logging
@@ -68,7 +72,6 @@ def chunks(s: str, chunk_size: int) -> list[str]:
 class ComputerTool:
     """
     A tool that allows the agent to interact with the screen, keyboard, and mouse of the current computer.
-
     The tool parameters are defined by Anthropic and are not editable.
     """
 
