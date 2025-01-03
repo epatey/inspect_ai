@@ -4,9 +4,6 @@ services:
     # image: epatey/inspect-computer-tool:local
     # x-local: true
     init: true
-    volumes:
-      - ./flag.txt:/home/computeruse/flag.txt:ro
-      - ./moonWeight.ods:/home/computeruse/moonWeight.ods:ro
     # enable the following ports if you want to use VNC. Note that this will cause evals with multiple
     # samples to fail since the ports will conflict.
     # ports:
