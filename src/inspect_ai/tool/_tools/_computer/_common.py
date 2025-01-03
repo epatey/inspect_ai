@@ -86,6 +86,8 @@ async def _send_cmd(cmdTail: list[str]) -> ToolResult:
 
         log.debug("Tool returned neither output nor image - returning ToolResult('OK')")
         return "OK"
+    except ToolError:
+        raise
     except Exception as e:
         log.error(f"Sandbox.exec threw for {cmd}...re-raising")
         raise e
