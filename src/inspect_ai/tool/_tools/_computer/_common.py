@@ -136,4 +136,3 @@ async def press_key(key: str) -> ToolResult:
 
 async def type(text: str) -> ToolResult:
     return await _send_cmd(["type", "--text", text])
-    return await _send_cmd(["type", "--text", text])
