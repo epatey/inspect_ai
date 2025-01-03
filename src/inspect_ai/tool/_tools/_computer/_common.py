@@ -53,7 +53,7 @@ async def _send_cmd(cmdTail: list[str]) -> ToolResult:
         log.debug("Stall done")
         hackIsFirstCommand = False
 
-    cmd = ["python3", "/opt/computer_tool/cli.py", "--action"] + cmdTail
+    cmd = ["python3", "/opt/computer_tool/computer_tool.py", "--action"] + cmdTail
     log.debug(f"Executing command: {cmd}")
 
     try:
