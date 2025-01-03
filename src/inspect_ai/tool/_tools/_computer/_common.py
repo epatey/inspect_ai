@@ -30,8 +30,9 @@ log = MockLogger()
 log.setLevel(logging.DEBUG)
 
 
-class ShellExecSuccessResult(BaseModel):
+class ToolExecResult(BaseModel):
     output: str | None = Field(default=None)
+    error: str | None = Field(default=None)
     base64_image: str | None = Field(default=None)
 
 
@@ -60,10 +61,15 @@ async def _send_cmd(cmdTail: list[str]) -> ToolResult:
         raw_exec_result = await sandbox().exec(cmd)
 
         if not raw_exec_result.success:
-            log.error(f"Execution failed with: {raw_exec_result.stderr[:200]}...")
-            raise ToolError(f"Error executing command: ${cmd} {raw_exec_result.stderr}")
+            raise Exception(
+                f"Failure executing command: ${cmd} {raw_exec_result.stderr}"
+            )
 
-        result = ShellExecSuccessResult(**json.loads(raw_exec_result.stdout))
+        result = ToolExecResult(**json.loads(raw_exec_result.stdout))
+
+        if result.error:
+            log.debug(f"Tool returned an error. Raising ToolError('{result.error}'")
+            raise ToolError(result.error)
 
         image = (
             ContentImage(image=f"data:image/png;base64,{result.base64_image}")

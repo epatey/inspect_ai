@@ -32,11 +32,8 @@ async def execute_action(args) -> ToolResult:
 
 
 def main():
-    log_dir = os.path.expanduser("/tmp")
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
     logging.basicConfig(
-        filename=os.path.join(log_dir, "computer_tool.log"),
+        filename=os.path.join("/tmp", "computer_tool.log"),
         filemode="a",
         format="%(asctime)s - %(levelname)s - %(message)s",
         level=logging.DEBUG,
@@ -47,13 +44,11 @@ def main():
         logging.info(f"Starting computer_tool CLI for {args}")
         result = asyncio.run(execute_action(args))
 
-        if result.error:
-            raise Exception(result.error)
-
         print(
             json.dumps(
                 {
                     "output": result.output,
+                    "error": result.error,
                     "base64_image": result.base64_image,
                 }
             )
