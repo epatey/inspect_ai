@@ -51,11 +51,6 @@ RUN apt-get update && \
     unzip && \
     apt-get clean
 
-# Install noVNC
-RUN git clone --branch v1.5.0 https://github.com/novnc/noVNC.git /opt/noVNC && \
-    git clone --branch v0.12.0 https://github.com/novnc/websockify /opt/noVNC/utils/websockify && \
-    ln -s /opt/noVNC/vnc.html /opt/noVNC/index.html
-
 # setup user
 ENV USERNAME=computeruse
 ENV HOME=/home/$USERNAME
