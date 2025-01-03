@@ -35,20 +35,11 @@ from inspect_ai._util.logger import warn_once
 from inspect_ai._util.url import data_uri_mime_type, data_uri_to_base64, is_data_uri
 from inspect_ai.tool import ToolCall, ToolChoice, ToolFunction, ToolInfo
 
-from .._chat_message import (
-    ChatMessage,
-    ChatMessageAssistant,
-    ChatMessageSystem,
-)
+from .._chat_message import ChatMessage, ChatMessageAssistant, ChatMessageSystem
 from .._generate_config import GenerateConfig
 from .._model import ModelAPI
 from .._model_call import ModelCall
-from .._model_output import (
-    ChatCompletionChoice,
-    ModelOutput,
-    ModelUsage,
-    StopReason,
-)
+from .._model_output import ChatCompletionChoice, ModelOutput, ModelUsage, StopReason
 from .util import environment_prerequisite_error, model_base_url
 
 logger = getLogger(__name__)
@@ -231,7 +222,7 @@ class AnthropicAPI(ModelAPI):
 
     @override
     def tool_result_images(self) -> bool:
-        return True
+        return self.model_name.startswith("claude-3-5-sonnet")
 
     # convert some common BadRequestError states into 'refusal' model output
     def handle_bad_request(self, ex: BadRequestError) -> ModelOutput | None:
