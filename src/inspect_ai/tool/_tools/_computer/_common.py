@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -10,6 +11,19 @@ from inspect_ai.tool import ToolError, ToolResult
 from inspect_ai.util import sandbox
 
 from ._mock_logger import MockLogger
+
+Action = Literal[
+    "key",
+    "type",
+    "mouse_move",
+    "left_click",
+    "left_click_drag",
+    "right_click",
+    "middle_click",
+    "double_click",
+    "screenshot",
+    "cursor_position",
+]
 
 # log = logging.getLogger(__name__)
 log = MockLogger()

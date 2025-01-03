@@ -2,7 +2,7 @@ from typing import Awaitable, Callable
 
 from inspect_ai.tool import Tool, ToolResult, tool
 
-from . import _computer_common as common
+from . import _common as common
 
 ActionFunction = Callable[[str], ToolResult | Awaitable[ToolResult]]
 

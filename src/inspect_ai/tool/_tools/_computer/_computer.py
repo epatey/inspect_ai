@@ -3,8 +3,8 @@ from typing import Awaitable, Callable
 from inspect_ai.tool import Tool, ToolError, ToolResult, tool
 from inspect_ai.tool._tool import ToolParsingError
 
-from . import _computer_common as common
-from ._action import Action
+from . import _common as common
+from ._common import Action
 
 ActionFunction = Callable[[str], ToolResult | Awaitable[ToolResult]]
 

@@ -6,9 +6,10 @@ from inspect_ai.solver._basic_agent import basic_agent
 from inspect_ai.tool import computer
 
 SYSTEM_MESSAGE = """
-Before each step, please clearly explain your intent for performing a tool action: "I expect a tool command X to ...".
+Before each step, please clearly explain your intent for performing a tool action: "I expect tool command X to ...".
 
-After each step, take a screenshot and carefully evaluate if you have achieved the right outcome.
+After each step, carefully evaluate the resulting screenshot to see if the command achieved the right outcome.
+
 Explicitly show your thinking: "I have evaluated step X..." If not correct, try again. Only when
 you confirm a step was executed correctly should you move on to the next one.
 
@@ -45,7 +46,6 @@ def computer_task():
         ],
         solver=basic_agent(
             init=system_message(SYSTEM_MESSAGE),
-            # tools=computer_split(),
             tools=[computer()],
             max_messages=100,
         ),
