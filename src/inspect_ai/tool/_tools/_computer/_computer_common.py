@@ -5,18 +5,15 @@ import logging
 from pydantic import BaseModel, Field
 
 from inspect_ai._util.content import ContentText
-from inspect_ai.model import Content, ContentImage
-from inspect_ai.tool._tool import ToolError
-from inspect_ai.tool._tools._computer._mock_logger import MockLogger
+from inspect_ai.model import ContentImage
+from inspect_ai.tool import ToolError, ToolResult
 from inspect_ai.util import sandbox
+
+from ._mock_logger import MockLogger
 
 # log = logging.getLogger(__name__)
 log = MockLogger()
 log.setLevel(logging.DEBUG)
-
-
-# TODO: Export ToolResult from inspect_ai.tool
-ToolResult = str | int | float | bool | list[Content]
 
 
 class ShellExecSuccessResult(BaseModel):
@@ -124,4 +121,5 @@ async def press_key(key: str) -> ToolResult:
 
 
 async def type(text: str) -> ToolResult:
+    return await _send_cmd(["type", "--text", text])
     return await _send_cmd(["type", "--text", text])

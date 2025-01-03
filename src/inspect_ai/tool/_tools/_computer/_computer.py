@@ -1,14 +1,10 @@
 from typing import Awaitable, Callable
 
-from inspect_ai.model import Content
-from inspect_ai.tool import Tool, tool
-from inspect_ai.tool._tool import ToolError, ToolParsingError
+from inspect_ai.tool import Tool, ToolError, ToolResult, tool
+from inspect_ai.tool._tool import ToolParsingError
 
 from . import _computer_common as common
 from ._action import Action
-
-# Export ToolResult from inspect_ai.tool
-ToolResult = str | int | float | bool | list[Content]
 
 ActionFunction = Callable[[str], ToolResult | Awaitable[ToolResult]]
 

@@ -1,21 +1,8 @@
 from typing import Awaitable, Callable
 
-from inspect_ai.model import Content
-from inspect_ai.tool import Tool, tool
-from inspect_ai.tool._tools._computer._computer_common import (
-    cursor_position,
-    double_click,
-    left_click,
-    left_click_drag,
-    mouse_move,
-    press_key,
-    right_click,
-    screenshot,
-    type,
-)
+from inspect_ai.tool import Tool, ToolResult, tool
 
-# TODO: Export ToolResult from inspect_ai.tool
-ToolResult = str | int | float | bool | list[Content]
+from . import _computer_common as common
 
 ActionFunction = Callable[[str], ToolResult | Awaitable[ToolResult]]
 
@@ -55,7 +42,7 @@ def computer_cursor_position() -> Tool:
         Returns:
           A `str` of the form "x y" where x and y are the current mouse coordinates.
         """
-        return await cursor_position()
+        return await common.cursor_position()
 
     return execute
 
@@ -72,7 +59,7 @@ def computer_screenshot() -> Tool:
         Returns:
           A `list` with a single `ContentImage` of the screen.
         """
-        return await screenshot()
+        return await common.screenshot()
 
     return execute
 
@@ -90,7 +77,7 @@ def computer_mouse_move() -> Tool:
         Returns:
           The `str` "OK" on success.
         """
-        return await mouse_move(x, y)
+        return await common.mouse_move(x, y)
 
     return execute
 
@@ -107,7 +94,7 @@ def computer_left_click() -> Tool:
         Returns:
           The `str` "OK" on success.
         """
-        return await left_click()
+        return await common.left_click()
 
     return execute
 
@@ -124,7 +111,7 @@ def computer_left_double_click() -> Tool:
         Returns:
           The `str` "OK" on success.
         """
-        return await double_click()
+        return await common.double_click()
 
     return execute
 
@@ -142,7 +129,7 @@ def computer_left_click_drag() -> Tool:
         Returns:
           The `str` "OK" on success.
         """
-        return await left_click_drag(x, y)
+        return await common.left_click_drag(x, y)
 
     return execute
 
@@ -159,7 +146,7 @@ def computer_right_click() -> Tool:
         Returns:
           The `str` "OK" on success.
         """
-        return await right_click()
+        return await common.right_click()
 
     return execute
 
@@ -182,7 +169,7 @@ def computer_key() -> Tool:
         Returns:
           The `str` "OK" on success.
         """
-        return await press_key(key)
+        return await common.press_key(key)
 
     return execute
 
@@ -199,6 +186,6 @@ def computer_type() -> Tool:
         Returns:
           The `str` "OK" on success.
         """
-        return await type(text)
+        return await common.type(text)
 
     return execute
