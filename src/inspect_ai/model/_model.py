@@ -165,7 +165,7 @@ class ModelAPI(abc.ABC):
         return False
 
     def tool_result_images(self) -> bool:
-        """Tool results can containe images"""
+        """Tool results can contain images"""
         return False
 
 
