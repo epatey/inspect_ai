@@ -43,26 +43,31 @@ def computer(timeout: int | None = None) -> Tool:
         Args:
           action (Action): The action to perform.
               - `key`: Press a key or key-combination on the keyboard.
-                  - This supports xdotool's `key`.
-                  - Examples: "Return", "Escape", "alt+Tab", "BackSpace", "Tab", "alt+Tab", "ctrl+s", "Up", "KP_0" (for the numpad 0 key),
+                  - Example: execute(action="key", text="ctrl+s")
+                  - Text can be any key name supported by xdotool's `key` such as:
+                      "Return", "Escape", "alt+Tab", "BackSpace", "Tab", "alt+Tab", "ctrl+s", "Up", "KP_0" (for the numpad 0 key),
                       "Insert", "Delete", "Home", "End", "Prior", "Next", "Left", "Up", "Right", "Down",
                       "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12",
                       "Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R", "Scroll_Lock", "Num_Lock", "Caps_Lock", "Pause",
                       "KP_Multiply", "KP_Home", "KP_Up", "KP_Prior", "KP_Subtract", "KP_Left", "KP_Begin", "KP_Right", "KP_Add", "KP_End","KP_Down",
                       "KP_Next", "KP_Insert", "KP_Delete", "KP_Enter", "KP_Divide", "KP_Equal", "KP_Decimal",
               - `type`: Type a string of text on the keyboard. If the text contains spaces, enclose it in quotes.
+                  - Example: execute(action="type", text="The crux of the biscuit is the apostrophe!")
               - `cursor_position`: Get the current (x, y) pixel coordinate of the cursor on the screen.
               - `mouse_move`: Move the cursor to a specified (x, y) pixel coordinate on the screen.
+                  - Example: execute(action="mouse_move", coordinate=(100, 200))
               - `left_click`: Click the left mouse button.
               - `left_click_drag`: Click and drag the cursor to a specified (x, y) pixel coordinate on the screen.
+                  - Example: execute(action="left_click_drag", coordinate=(150, 250))
               - `right_click`: Click the right mouse button.
               - `middle_click`: Click the middle mouse button.
               - `double_click`: Double-click the left mouse button.
               - `screenshot`: Take a screenshot.
-
           text (str | None): The text to type or the key to press. Required when action is "key" or "type".
           coordinate (tuple[int, int] | None): The (x, y) pixel coordinate on the screen to which to move or drag. Required when action is "mouse_move" or "left_click_drag".
 
+        Returns:
+          The output of the command. Many commands will include a screenshot reflecting the result of the command in their output.
         """
         try:
             if action in ("mouse_move", "left_click_drag"):
