@@ -396,7 +396,9 @@ def computer_use_tool_param(tool: ToolInfo) -> ComputerUseToolParam | None:
         return None
 
 
-def add_cache_control(param: TextBlockParam | ToolParam | dict[str, Any]) -> None:
+def add_cache_control(
+    param: TextBlockParam | ToolParam | ComputerUseToolParam | dict[str, Any],
+) -> None:
     cast(dict[str, Any], param)["cache_control"] = {"type": "ephemeral"}
 
 
