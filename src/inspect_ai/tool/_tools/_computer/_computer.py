@@ -2,7 +2,7 @@ from typing import Awaitable, Callable
 
 from inspect_ai.model import Content
 from inspect_ai.tool import Tool, tool
-from inspect_ai.tool._tool import ToolParsingError
+from inspect_ai.tool._tool import ToolError, ToolParsingError
 
 from . import _computer_common as common
 from ._action import Action
@@ -128,7 +128,9 @@ def computer(timeout: int | None = None) -> Tool:
 
             raise ToolParsingError(f"Invalid action: {action}")
 
+        except ToolError:
+            raise
         except Exception as e:
-            return f"An error occurred while executing the action: {e}"
+            raise ToolError(str(e))
 
     return execute
