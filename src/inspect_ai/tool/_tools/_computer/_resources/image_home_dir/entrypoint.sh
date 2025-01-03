@@ -1,9 +1,11 @@
 #!/bin/bash
 set -e
 
-./start_all.sh
-
-python http_server.py > /tmp/server_logs.txt 2>&1 &
+export DISPLAY=:${DISPLAY_NUM}
+./xvfb_startup.sh
+./tint2_startup.sh
+./mutter_startup.sh
+./x11vnc_startup.sh
 
 # Keep the container running
 tail -f /dev/null

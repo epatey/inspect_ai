@@ -21,3 +21,8 @@ It has been adapted to launch only those tools required for the Inspect `compute
 4. **x11vnc**
    - **Script:** `x11vnc_startup.sh`
    - **Description:** x11vnc is a VNC server that allows remote access to the X11 display. It enables users to connect to the virtual display environment from a remote machine using a VNC client.
+
+## `.config/tint2` Directory
+
+The `.config/tint2` directory contains configuration files for tint2. These files define the appearance and behavior of the tint2 panel, including the taskbar, system tray, and application launcher. You can customize the tint2 panel by modifying the configuration files in this directory.
+
