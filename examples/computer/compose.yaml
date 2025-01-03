@@ -1,8 +1,7 @@
 services:
   default:
-    image: epatey/inspect-computer-tool
-    # image: epatey/inspect-computer-tool:local
-    # x-local: true
+    # Temporary image until the official one is available
+    image: inspect-computer-tool
     init: true
     # enable the following ports if you want to use VNC. Note that this will cause evals with multiple
     # samples to fail since the ports will conflict.
