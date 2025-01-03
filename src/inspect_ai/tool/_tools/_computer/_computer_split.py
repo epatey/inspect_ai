@@ -43,7 +43,7 @@ def computer_split() -> list[Tool]:
     ]
 
 
-@tool(parallel=False)
+@tool()
 def computer_cursor_position() -> Tool:
     async def execute() -> ToolResult:
         """
@@ -60,7 +60,7 @@ def computer_cursor_position() -> Tool:
     return execute
 
 
-@tool(parallel=False)
+@tool()
 def computer_screenshot() -> Tool:
     async def execute() -> ToolResult:
         """
@@ -77,7 +77,7 @@ def computer_screenshot() -> Tool:
     return execute
 
 
-@tool(parallel=False)
+@tool()
 def computer_mouse_move() -> Tool:
     async def execute(x: int, y: int) -> ToolResult:
         """
@@ -95,7 +95,7 @@ def computer_mouse_move() -> Tool:
     return execute
 
 
-@tool(parallel=False)
+@tool()
 def computer_left_click() -> Tool:
     async def execute() -> ToolResult:
         """
@@ -112,7 +112,7 @@ def computer_left_click() -> Tool:
     return execute
 
 
-@tool(parallel=False)
+@tool()
 def computer_left_double_click() -> Tool:
     async def execute() -> ToolResult:
         """
@@ -129,7 +129,7 @@ def computer_left_double_click() -> Tool:
     return execute
 
 
-@tool(parallel=False)
+@tool()
 def computer_left_click_drag() -> Tool:
     async def execute(x: int, y: int) -> ToolResult:
         """
@@ -147,7 +147,7 @@ def computer_left_click_drag() -> Tool:
     return execute
 
 
-@tool(parallel=False)
+@tool()
 def computer_right_click() -> Tool:
     async def execute() -> ToolResult:
         """
@@ -165,7 +165,7 @@ def computer_right_click() -> Tool:
 
 
 # keysm list is from https://gist.github.com/rvaiya/be31f42049a4b5ad46666a8e120d9843
-@tool(parallel=False)
+@tool()
 def computer_key() -> Tool:
     async def execute(key: str) -> ToolResult:
         """
@@ -187,7 +187,7 @@ def computer_key() -> Tool:
     return execute
 
 
-@tool(parallel=False)
+@tool()
 def computer_type() -> Tool:
     async def execute(text: str) -> ToolResult:
         """

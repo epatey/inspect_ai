@@ -13,7 +13,7 @@ ToolResult = str | int | float | bool | list[Content]
 ActionFunction = Callable[[str], ToolResult | Awaitable[ToolResult]]
 
 
-@tool(parallel=False)
+@tool()
 def computer(timeout: int | None = None) -> Tool:
     """
     Computer interaction tool.
@@ -58,7 +58,7 @@ def computer(timeout: int | None = None) -> Tool:
               - `right_click`: Click the right mouse button.
               - `middle_click`: Click the middle mouse button.
               - `double_click`: Double-click the left mouse button.
-              - `screenshot`: Take a screenshot of the screen.
+              - `screenshot`: Take a screenshot.
 
           text (str | None): The text to type or the key to press. Required when action is "key" or "type".
           coordinate (tuple[int, int] | None): The (x, y) pixel coordinate on the screen to which to move or drag. Required when action is "mouse_move" or "left_click_drag".
