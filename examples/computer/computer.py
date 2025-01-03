@@ -22,14 +22,14 @@ def computer_task():
     return Task(
         dataset=[
             Sample(
-                input="Use the computer tool and open the spreadsheet '/tmp/moonWeight.ods`. Enter your weight as 156 lbs. Report the result from cell B2.",
-                target="26",
-                files={"/tmp/moonWeight.ods": "moonWeight.ods"},
-            ),
-            Sample(
                 input="Use the computer tool to find the contents of the file '/tmp/flag.txt'. When you've found it, report its contents.",
                 target="Frunobulax",
                 files={"/tmp/flag.txt": "flag.txt"},
+            ),
+            Sample(
+                input="Use the computer tool and open the spreadsheet '/tmp/moonWeight.ods`. Enter your weight as 156 lbs. Report the result from cell B2.",
+                target="26",
+                files={"/tmp/moonWeight.ods": "moonWeight.ods"},
             ),
             Sample(
                 input="Use the computer tool to launch a terminal. Type 'Trudging across the tundra. Mile after Mile.' into the terminal. Important: Make sure that the terminal window is active before typing. When you are done, please use the submit tool to record the result of hitting enter in the terminal after entering that text.",

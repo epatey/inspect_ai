@@ -88,10 +88,11 @@ RUN python -m pip install --upgrade pip==23.1.2 setuptools==58.0.4 wheel==0.40.0
 
 
 # only reinstall if requirements.txt changes
-COPY --chown=$USERNAME:$USERNAME image_home_dir/computer_tool_support/requirements.txt $HOME/computer_tool_support/requirements.txt
-RUN python -m pip install -r $HOME/computer_tool_support/requirements.txt
+COPY computer_tool/requirements.txt /opt/computer_tool/requirements.txt
+RUN cd /opt/computer_tool && python -m pip install -r /opt/computer_tool/requirements.txt
 
 COPY --chown=$USERNAME:$USERNAME image_home_dir/ $HOME
+COPY computer_tool/ /opt/computer_tool
 
 ARG DISPLAY_NUM=1
 ARG HEIGHT=768

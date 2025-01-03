@@ -24,7 +24,7 @@ def computer(timeout: int | None = None) -> Tool:
     async def execute(
         action: Action,
         text: str | None = None,
-        coordinate: tuple[int, int] | None = None,
+        coordinate: list[int] | None = None,
     ) -> ToolResult:
         """
         Use this tool to interact with the computer.

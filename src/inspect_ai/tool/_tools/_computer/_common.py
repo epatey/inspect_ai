@@ -44,23 +44,23 @@ async def _send_cmd(cmdTail: list[str]) -> ToolResult:
     # happens too soon before the GUI has actually rendered.
     global hackIsFirstCommand
     if hackIsFirstCommand:
-        stallResult = await sandbox().exec(["ls"])
+        stallResult = await sandbox().exec(["whoami"])
         if not stallResult.success:
             log.error(f"First sandbox().exec() failed with: {stallResult.stderr}")
             raise ToolError(f"Error executing command: {stallResult.stderr}")
-        log.debug("First sandbox().exec() succeeded...sleeping")
+        log.debug(f"First sandbox().exec() succeeded {stallResult.stdout}...sleeping")
         await asyncio.sleep(20)
         log.debug("Stall done")
         hackIsFirstCommand = False
 
-    cmd = ["python3", "computer_tool_support/cli.py", "--action"] + cmdTail
+    cmd = ["python3", "/opt/computer_tool/cli.py", "--action"] + cmdTail
     log.debug(f"Executing command: {cmd}")
 
     try:
         raw_exec_result = await sandbox().exec(cmd)
 
         if not raw_exec_result.success:
-            log.error(f"Execution failed with: {raw_exec_result.stderr[:50]}...")
+            log.error(f"Execution failed with: {raw_exec_result.stderr[:200]}...")
             raise ToolError(f"Error executing command: ${cmd} {raw_exec_result.stderr}")
 
         result = ShellExecSuccessResult(**json.loads(raw_exec_result.stdout))
