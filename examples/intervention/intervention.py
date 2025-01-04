@@ -12,7 +12,7 @@ from inspect_ai.solver import (
     system_message,
     use_tools,
 )
-from inspect_ai.tool import bash, python
+from inspect_ai.tool import bash, computer, python
 from inspect_ai.util import input_screen
 
 
@@ -22,11 +22,20 @@ def intervention():
         solver=[
             system_prompt(),
             user_prompt(),
-            use_tools([bash(), python()]),
+            use_tools([computer()]),
             agent_loop(),
         ],
-        sandbox="docker",
+        sandbox=("docker", "computer-compose.yaml"),
     )
+    # return Task(
+    #     solver=[
+    #         system_prompt(),
+    #         user_prompt(),
+    #         use_tools([bash(), python()]),
+    #         agent_loop(),
+    #     ],
+    #     sandbox="docker",
+    # )
 
 
 @solver
