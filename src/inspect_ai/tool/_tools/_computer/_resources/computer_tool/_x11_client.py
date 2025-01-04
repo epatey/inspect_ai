@@ -79,7 +79,8 @@ class X11Client:
     width: int
     height: int
     display_num: int | None
-    color_count: ColorCount | None = None
+    # TODO: Complete plumbing this or remove it
+    color_count: ColorCount | None = 64
 
     _screenshot_delay = 2.0
     _scaling_enabled = True
