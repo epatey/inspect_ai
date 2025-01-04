@@ -6,7 +6,6 @@ import logging
 import os
 import shlex
 import shutil
-from enum import StrEnum
 from pathlib import Path
 from typing import Literal, TypedDict
 from uuid import uuid4
@@ -54,9 +53,7 @@ MAX_SCALING_TARGETS: dict[str, Resolution] = {
 }
 
 
-class ScalingSource(StrEnum):
-    COMPUTER = "computer"
-    API = "api"
+ScalingSource = Literal["computer", "api"]
 
 
 class ComputerToolOptions(TypedDict):
@@ -87,9 +84,7 @@ class X11Client:
 
     @property
     def options(self) -> ComputerToolOptions:
-        width, height = self.scale_coordinates(
-            ScalingSource.COMPUTER, self.width, self.height
-        )
+        width, height = self.scale_coordinates("computer", self.width, self.height)
         return {
             "display_width_px": width,
             "display_height_px": height,
@@ -129,9 +124,7 @@ class X11Client:
             if not all(isinstance(i, int) and i >= 0 for i in coordinate):
                 raise ToolError(f"{coordinate} must be a tuple of non-negative ints")
 
-            x, y = self.scale_coordinates(
-                ScalingSource.API, coordinate[0], coordinate[1]
-            )
+            x, y = self.scale_coordinates("api", coordinate[0], coordinate[1])
 
             if action == "mouse_move":
                 return await self.shell(f"{self.xdotool} mousemove --sync {x} {y}")
@@ -185,7 +178,7 @@ class X11Client:
                 )
                 output = result.output or ""
                 x, y = self.scale_coordinates(
-                    ScalingSource.COMPUTER,
+                    "computer",
                     int(output.split("X=")[1].split("\n")[0]),
                     int(output.split("Y=")[1].split("\n")[0]),
                 )
@@ -207,18 +200,11 @@ class X11Client:
         output_dir.mkdir(parents=True, exist_ok=True)
         path = output_dir / f"screenshot_{uuid4().hex}.png"
 
-        # Try gnome-screenshot first
-        if shutil.which("gnome-screenshot"):
-            screenshot_cmd = f"{self._display_prefix}gnome-screenshot -f {path} -p"
-        else:
-            # Fall back to scrot if gnome-screenshot isn't available
-            screenshot_cmd = f"{self._display_prefix}scrot -p {path}"
-
-        result = await self.shell(screenshot_cmd, take_screenshot=False)
+        result = await self.shell(
+            f"{self._display_prefix}scrot -p {path}", take_screenshot=False
+        )
         if self._scaling_enabled:
-            x, y = self.scale_coordinates(
-                ScalingSource.COMPUTER, self.width, self.height
-            )
+            x, y = self.scale_coordinates("computer", self.width, self.height)
             convert_cmd = f"convert {path} -resize {x}x{y}!"
             if self.color_count is not None:
                 convert_cmd += f" -colors {self.color_count}"
@@ -266,7 +252,7 @@ class X11Client:
         # should be less than 1
         x_scaling_factor = target_dimension["width"] / self.width
         y_scaling_factor = target_dimension["height"] / self.height
-        if source == ScalingSource.API:
+        if source == "api":
             if x > self.width or y > self.height:
                 raise ToolError(f"Coordinates {x}, {y} are out of bounds")
             # scale up
