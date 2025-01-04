@@ -7,36 +7,48 @@ RUN apt-get update && \
     apt-get -y upgrade && \
     apt-get -y install \
     # UI Requirements
-    xvfb \
+    # A virtual framebuffer for running GUI applications without a physical display.
+    xvfb \    
+    # A terminal emulator for X.
     xterm \
+    # A command-line tool for automating X11 applications (e.g., simulating keyboard/mouse inputs).
     xdotool \
+    # A command-line tool for taking screenshots.
     scrot \
+    # A suite for image manipulation.
     imagemagick \
     sudo \
+    # A lightweight window manager.
     mutter \
+    # A VNC server for sharing X11 desktops.
     x11vnc \
     # Python reqs
     python3 \
     python3-pip \
     # Network tools
+    # Provides networking tools like ifconfig, netstat, etc.
     net-tools \
+    # A versatile networking tool for debugging, port scanning, and more.
     netcat \
-    # PPA req
+    # Adds tools like add-apt-repository for managing PPAs.
     software-properties-common && \
-    # Add PPA for Firefox
+    # Add PPA repository for Firefox
     sudo add-apt-repository ppa:mozillateam/ppa && \
     # Userland apps
     sudo apt-get install -y --no-install-recommends \
-    libreoffice \
     firefox-esr \
-    x11-apps \
+    # A lightweight PDF viewer.
     xpdf \
+    # A simple text editor.
     gedit \
+    # A simple image viewer.
     xpaint \
+    # A lightweight taskbar for graphical desktops.
     tint2 \
+    # A calculator application.
     galculator \
-    pcmanfm \
-    unzip && \
+    # A lightweight file manager.
+    pcmanfm && \
     apt-get clean
 
 # setup user

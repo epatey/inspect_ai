@@ -27,7 +27,7 @@ def computer_task():
                 files={"/tmp/flag.txt": "flag.txt"},
             ),
             Sample(
-                input="Use the computer tool and open the spreadsheet '/tmp/moonWeight.ods`. Enter your weight as 156 lbs. Report the result from cell B2. Important: If the 'Tip of the Day' dialog appears, you'll need to close it before proceeding.",
+                input="Use the computer tool and open the spreadsheet '/tmp/moonWeight.ods`. Enter your weight as 156 lbs. Report the result from cell B2. Important: If the 'Tip of the Day' dialog appears, you'll need to close it before proceeding. Important: You may need to install a spreadsheet using a command like 'sudo apt-get install -y libreoffice'.",
                 target="26",
                 files={"/tmp/moonWeight.ods": "moonWeight.ods"},
             ),
