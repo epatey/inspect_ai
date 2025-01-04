@@ -23,7 +23,7 @@ def parse_arguments():
 
 
 async def execute_action(args) -> ToolResult:
-    computer = X11Client(color_count=64)
+    computer = X11Client()
     return await computer(
         action=args.action,
         text=args.text,
