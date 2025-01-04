@@ -19,6 +19,8 @@ OUTPUT_DIR = "/tmp/outputs"
 TYPING_DELAY_MS = 12
 TYPING_GROUP_SIZE = 50
 
+ColorCount = Literal[4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4]
+
 Action = Literal[
     "key",
     "type",
@@ -67,7 +69,7 @@ def chunks(s: str, chunk_size: int) -> list[str]:
     return [s[i : i + chunk_size] for i in range(0, len(s), chunk_size)]
 
 
-class ComputerTool:
+class X11Client:
     """
     A tool that allows the agent to interact with the screen, keyboard, and mouse of the current computer.
 
@@ -77,6 +79,7 @@ class ComputerTool:
     width: int
     height: int
     display_num: int | None
+    color_count: ColorCount | None = None
 
     _screenshot_delay = 2.0
     _scaling_enabled = True
@@ -215,9 +218,11 @@ class ComputerTool:
             x, y = self.scale_coordinates(
                 ScalingSource.COMPUTER, self.width, self.height
             )
-            await self.shell(
-                f"convert {path} -resize {x}x{y}! {path}", take_screenshot=False
-            )
+            convert_cmd = f"convert {path} -resize {x}x{y}!"
+            if self.color_count is not None:
+                convert_cmd += f" -colors {self.color_count}"
+            convert_cmd += f" {path}"
+            await self.shell(convert_cmd, take_screenshot=False)
 
         if path.exists():
             return result.replace(

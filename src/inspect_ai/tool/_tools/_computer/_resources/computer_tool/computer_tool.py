@@ -5,8 +5,8 @@ import logging
 import os
 import sys
 
-from _computer import ComputerTool
 from _tool_result import ToolResult
+from _x11_client import X11Client
 
 
 def parse_arguments():
@@ -23,7 +23,7 @@ def parse_arguments():
 
 
 async def execute_action(args) -> ToolResult:
-    computer = ComputerTool()
+    computer = X11Client(color_count=64)
     return await computer(
         action=args.action,
         text=args.text,
