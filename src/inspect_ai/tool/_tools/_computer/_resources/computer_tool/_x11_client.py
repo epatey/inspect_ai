@@ -5,7 +5,6 @@ import base64
 import logging
 import os
 import shlex
-import shutil
 from pathlib import Path
 from typing import Literal, TypedDict
 from uuid import uuid4
