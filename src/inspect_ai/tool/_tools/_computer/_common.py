@@ -9,8 +9,6 @@ from inspect_ai.model import ContentImage
 from inspect_ai.tool import ToolError, ToolResult
 from inspect_ai.util import sandbox
 
-from ._mock_logger import MockLogger
-
 Action = Literal[
     "key",
     "type",
@@ -24,8 +22,8 @@ Action = Literal[
     "cursor_position",
 ]
 
-# log = logging.getLogger(__name__)
-log = MockLogger()
+log = logging.getLogger(__name__)
+# log = MockLogger()
 log.setLevel(logging.DEBUG)
 
 
@@ -44,7 +42,7 @@ async def _send_cmd(cmdTail: list[str]) -> ToolResult:
     assert sample_id
 
     cmd = ["python3", "/opt/computer_tool/computer_tool.py", "--action"] + cmdTail
-    log.debug(f"(sample={sample_id}) Executing command: {cmd}")
+    log.info(f"(sample={sample_id}) Executing command: {cmd}")
 
     try:
         raw_exec_result = await sandbox().exec(cmd)
@@ -57,7 +55,7 @@ async def _send_cmd(cmdTail: list[str]) -> ToolResult:
         result = ToolExecResult(**json.loads(raw_exec_result.stdout))
 
         if result.error:
-            log.debug(
+            log.warning(
                 f"(sample={sample_id}) Tool returned an error. Raising ToolError('{result.error}'"
             )
             raise ToolError(result.error)
@@ -70,20 +68,20 @@ async def _send_cmd(cmdTail: list[str]) -> ToolResult:
         text = result.output if result.output and len(result.output) > 0 else None
 
         if text is not None and image is not None:
-            log.debug(
+            log.info(
                 f"(sample={sample_id}) ToolResult([ContentText('{text}'), ContentImage])"
             )
             return [ContentText(text=text), image]
 
         if text is not None:
-            log.debug(f"(sample={sample_id}) ToolResult('{text}')")
+            log.info(f"(sample={sample_id}) ToolResult('{text}')")
             return text
 
         if image is not None:
-            log.debug(f"(sample={sample_id}) ToolResult([ContentImage])")
+            log.info(f"(sample={sample_id}) ToolResult([ContentImage])")
             return [image]
 
-        log.debug(
+        log.warning(
             "(sample={sample_id}) Tool returned neither output nor image - returning ToolResult('OK')"
         )
         return "OK"
