@@ -8,7 +8,7 @@ from _logger import setup_logger
 from _tool_result import ToolResult
 from _x11_client import X11Client
 
-my_logger = setup_logger(logging.DEBUG)
+my_logger = setup_logger(logging.INFO)
 
 
 def parse_arguments():

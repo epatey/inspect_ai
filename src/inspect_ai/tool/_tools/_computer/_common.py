@@ -40,6 +40,13 @@ hackIsFirstCommand = True
 
 
 async def _send_cmd(cmdTail: list[str]) -> ToolResult:
+    from inspect_ai.log._samples import sample_active
+
+    sample = sample_active()
+    assert sample
+    sample_id = sample.sample.id
+    assert sample_id
+
     # TODO: Resolve this issue
     # without this delay, the first attempt to take a screenshot
     # happens too soon before the GUI has actually rendered.
@@ -47,15 +54,18 @@ async def _send_cmd(cmdTail: list[str]) -> ToolResult:
     if hackIsFirstCommand:
         stallResult = await sandbox().exec(["whoami"])
         if not stallResult.success:
-            log.error(f"First sandbox().exec() failed with: {stallResult.stderr}")
+            log.error(
+                f"(sample={sample_id}) First sandbox().exec() failed with: {stallResult.stderr}"
+            )
             raise ToolError(f"Error executing command: {stallResult.stderr}")
-        log.debug(f"First sandbox().exec() succeeded {stallResult.stdout}...sleeping")
-        await asyncio.sleep(20)
-        log.debug("Stall done")
+        log.debug(f"(sample={sample_id}) First sandbox().exec() succeeded...sleeping")
+        await asyncio.sleep(15)
+        # await asyncio.sleep(20)
+        log.debug(f"(sample={sample_id}) Stall done")
         hackIsFirstCommand = False
 
     cmd = ["python3", "/opt/computer_tool/computer_tool.py", "--action"] + cmdTail
-    log.debug(f"Executing command: {cmd}")
+    log.debug(f"(sample={sample_id}) Executing command: {cmd}")
 
     try:
         raw_exec_result = await sandbox().exec(cmd)
@@ -68,7 +78,9 @@ async def _send_cmd(cmdTail: list[str]) -> ToolResult:
         result = ToolExecResult(**json.loads(raw_exec_result.stdout))
 
         if result.error:
-            log.debug(f"Tool returned an error. Raising ToolError('{result.error}'")
+            log.debug(
+                f"(sample={sample_id}) Tool returned an error. Raising ToolError('{result.error}'"
+            )
             raise ToolError(result.error)
 
         image = (
@@ -79,23 +91,27 @@ async def _send_cmd(cmdTail: list[str]) -> ToolResult:
         text = result.output if result.output and len(result.output) > 0 else None
 
         if text is not None and image is not None:
-            log.debug(f"ToolResult([ContentText('{text}'), ContentImage])")
+            log.debug(
+                f"(sample={sample_id}) ToolResult([ContentText('{text}'), ContentImage])"
+            )
             return [ContentText(text=text), image]
 
         if text is not None:
-            log.debug(f"ToolResult('{text}')")
+            log.debug(f"(sample={sample_id}) ToolResult('{text}')")
             return text
 
         if image is not None:
-            log.debug("ToolResult([ContentImage])")
+            log.debug(f"(sample={sample_id}) ToolResult([ContentImage])")
             return [image]
 
-        log.debug("Tool returned neither output nor image - returning ToolResult('OK')")
+        log.debug(
+            "(sample={sample_id}) Tool returned neither output nor image - returning ToolResult('OK')"
+        )
         return "OK"
     except ToolError:
         raise
     except Exception as e:
-        log.error(f"Sandbox.exec threw for {cmd}...re-raising")
+        log.error(f"(sample={sample_id}) Sandbox.exec threw for {cmd}...re-raising")
         raise e
 
 
