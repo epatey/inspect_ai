@@ -3,7 +3,14 @@ services:
     # Temporary internal image until the official one is available
     image: inspect-computer-tool
     init: true
-    # enable the following port if you want to use VNC. Note that this will cause evals with multiple
-    # samples to fail since the ports will conflict.
+
+    # If you only launch a single container, you can vnc into that container by using
+    # the following port mapping
     # ports:
     #   - "5900:5900"
+
+    # If you launch multiple containers, you can vnc into each container by using the
+    # following port mapping, but you will need to determine the host port number for
+    # the specific container by using `docker inspect <container_id_or_name>`
+    # ports:
+    #   - "5900"

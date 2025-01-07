@@ -66,6 +66,8 @@ RUN cd /opt/computer_tool && pip3 install --no-cache-dir -r requirements.txt
 COPY --chown=$USERNAME:$USERNAME image_home_dir/ $HOME
 COPY computer_tool/ /opt/computer_tool
 
+EXPOSE 5900
+
 ARG DISPLAY_NUM=1
 ARG HEIGHT=768
 ARG WIDTH=1024
