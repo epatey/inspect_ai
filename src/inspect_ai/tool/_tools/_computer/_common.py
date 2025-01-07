@@ -1,4 +1,3 @@
-import asyncio
 import json
 import logging
 from typing import Literal
@@ -36,9 +35,6 @@ class ToolExecResult(BaseModel):
     base64_image: str | None = Field(default=None)
 
 
-hackIsFirstCommand = True
-
-
 async def _send_cmd(cmdTail: list[str]) -> ToolResult:
     from inspect_ai.log._samples import sample_active
 
@@ -46,23 +42,6 @@ async def _send_cmd(cmdTail: list[str]) -> ToolResult:
     assert sample
     sample_id = sample.sample.id
     assert sample_id
-
-    # TODO: Resolve this issue
-    # without this delay, the first attempt to take a screenshot
-    # happens too soon before the GUI has actually rendered.
-    global hackIsFirstCommand
-    if hackIsFirstCommand:
-        stallResult = await sandbox().exec(["whoami"])
-        if not stallResult.success:
-            log.error(
-                f"(sample={sample_id}) First sandbox().exec() failed with: {stallResult.stderr}"
-            )
-            raise ToolError(f"Error executing command: {stallResult.stderr}")
-        log.debug(f"(sample={sample_id}) First sandbox().exec() succeeded...sleeping")
-        await asyncio.sleep(15)
-        # await asyncio.sleep(20)
-        log.debug(f"(sample={sample_id}) Stall done")
-        hackIsFirstCommand = False
 
     cmd = ["python3", "/opt/computer_tool/computer_tool.py", "--action"] + cmdTail
     log.debug(f"(sample={sample_id}) Executing command: {cmd}")

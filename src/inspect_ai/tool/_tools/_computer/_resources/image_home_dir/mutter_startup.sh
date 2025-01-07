@@ -17,4 +17,5 @@ if [ $timeout -eq 0 ]; then
     exit 1
 fi
 
+touch /tmp/mutter_started
 rm /tmp/mutter_stderr.log

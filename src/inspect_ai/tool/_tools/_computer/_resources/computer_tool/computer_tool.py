@@ -2,13 +2,27 @@ import argparse
 import asyncio
 import json
 import logging
+import os
 import sys
+import time
 
 from _logger import setup_logger
 from _tool_result import ToolResult
 from _x11_client import X11Client
 
 my_logger = setup_logger(logging.INFO)
+
+
+async def wait_for_file(file_path, check_interval=1):
+    if os.path.exists(file_path):
+        return
+    my_logger.info(f"Waiting for {file_path}")
+    start_time = time.time()
+    while not os.path.exists(file_path):
+        await asyncio.sleep(check_interval)
+    my_logger.info(
+        f"Done waiting for {file_path} after {time.time() - start_time:.1f} seconds"
+    )
 
 
 def parse_arguments():
@@ -25,6 +39,8 @@ def parse_arguments():
 
 
 async def execute_action(args) -> ToolResult:
+    await wait_for_file("/tmp/mutter_started")
+
     computer = X11Client()
     return await computer(
         action=args.action,
