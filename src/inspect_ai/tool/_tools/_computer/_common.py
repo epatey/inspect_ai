@@ -88,7 +88,7 @@ async def _send_cmd(cmdTail: list[str]) -> ToolResult:
     except ToolError:
         raise
     except Exception as e:
-        log.error(f"(sample={sample_id}) Sandbox.exec threw for {cmd}...re-raising")
+        log.error(f"(sample={sample_id}) Sandbox.exec threw for {cmd}...re-raising {e}")
         raise e
 
 
