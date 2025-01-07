@@ -2,11 +2,13 @@ import argparse
 import asyncio
 import json
 import logging
-import os
 import sys
 
+from _logger import setup_logger
 from _tool_result import ToolResult
 from _x11_client import X11Client
+
+my_logger = setup_logger(logging.DEBUG)
 
 
 def parse_arguments():
@@ -32,16 +34,9 @@ async def execute_action(args) -> ToolResult:
 
 
 def main():
-    logging.basicConfig(
-        filename=os.path.join("/tmp", "computer_tool.log"),
-        filemode="a",
-        format="%(asctime)s - %(levelname)s - %(message)s",
-        level=logging.DEBUG,
-    )
-
     try:
         args = parse_arguments()
-        logging.info(f"Starting computer_tool CLI for {args}")
+        my_logger.info(f"({args})")
         result = asyncio.run(execute_action(args))
 
         print(
@@ -53,9 +48,9 @@ def main():
                 }
             )
         )
-        logging.info(f"Execution of {args} successful")
+        my_logger.debug("SUCCESS")
     except Exception as e:
-        logging.error(f"An error occurred: {e}")
+        my_logger.warning(f"An error occurred: {e}")
         print(f"An error occurred: {e}", file=sys.stderr)
         sys.exit(1)
 
