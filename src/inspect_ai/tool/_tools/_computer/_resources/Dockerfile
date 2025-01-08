@@ -13,13 +13,14 @@ RUN apt-get update && \
     xterm \
     # A command-line tool for automating X11 applications (e.g., simulating keyboard/mouse inputs).
     xdotool \
+    x11-xserver-utils \
     # A command-line tool for taking screenshots.
     scrot \
     # A suite for image manipulation.
     imagemagick \
     sudo \
-    # A lightweight window manager.
-    mutter \
+    # TODO comment me
+    fluxbox \
     # A VNC server for sharing X11 desktops.
     x11vnc \
     # Python reqs
@@ -44,7 +45,7 @@ RUN apt-get update && \
     # A simple image viewer.
     xpaint \
     # A lightweight taskbar for graphical desktops.
-    tint2 \
+    # tint2 \
     # A calculator application.
     galculator \
     # A lightweight file manager.
