@@ -200,7 +200,7 @@ class X11Client:
         path = output_dir / f"screenshot_{uuid4().hex}.png"
 
         result = await self.shell(
-            f"{self._display_prefix}scrot -p {path}", take_screenshot=False
+            f"{self._display_prefix}scrot --silent -p {path}", take_screenshot=False
         )
         if self._scaling_enabled:
             x, y = self.scale_coordinates("computer", self.width, self.height)
