@@ -73,11 +73,38 @@ RUN apt-get install -y \
 # configure noVNC
 RUN ln -s /usr/share/novnc/vnc.html /usr/share/novnc/index.html
 
+
+RUN apt-get install -y \
+      gnome-session \
+      gnome-terminal \
+      gnome-shell \
+      ubuntu-gnome-default-settings \
+      dbus-x11 \
+      gnome-control-center \
+      nautilus \
+      xvfb \
+      x11vnc && \
+    apt-get clean
+    
 # setup user
 ENV USERNAME=computeruse
 ENV HOME=/home/$USERNAME
 RUN useradd -m -s /bin/bash -d $HOME $USERNAME
 RUN echo "${USERNAME} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+
+
+
+    
+RUN mkdir -p /var/run/dbus && \
+    chown $USERNAME:$USERNAME /var/run/dbus && \
+    chmod 775 /var/run/dbus && \
+    touch /root/.Xauthority && \
+    chown $USERNAME:$USERNAME /root/.Xauthority    
+    
+RUN echo "[daemon]\nWaylandEnable=false\nDefaultSession=gnome-xorg.desktop" > /etc/gdm3/custom.conf
+
+
+
 USER computeruse
 WORKDIR $HOME
 
