@@ -1,0 +1,10 @@
+services:
+  default:
+    image: osworld
+    x-local: true
+    init: true
+
+    ports:
+      - "5000"
+      - "5900"
+      - "6080"

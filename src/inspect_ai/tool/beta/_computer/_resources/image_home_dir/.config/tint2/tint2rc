@@ -61,6 +61,7 @@ launcher_tooltip = 1
 # Launcher icon
 launcher_item_app = /usr/share/applications/pcmanfm.desktop
 launcher_item_app = /home/user/.config/tint2/applications/code.desktop
+launcher_item_app = /home/user/.config/tint2/applications/gimp.desktop
 launcher_item_app = /home/user/.config/tint2/applications/terminal.desktop
 launcher_item_app = /home/user/.config/tint2/applications/firefox-custom.desktop
 launcher_item_app = /usr/share/applications/xpaint.desktop

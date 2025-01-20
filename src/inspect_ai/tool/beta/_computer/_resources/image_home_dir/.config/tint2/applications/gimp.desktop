@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Gimp
+Comment=Open Gimp
+Exec=/usr/bin/gimp
+Icon=/usr/share/icons/hicolor/32x32/apps/gimp.png
+Terminal=false
+Type=Application
+Categories=Graphics;RasterGraphics;
