@@ -73,29 +73,32 @@ RUN apt-get install -y \
 # configure noVNC
 RUN ln -s /usr/share/novnc/vnc.html /usr/share/novnc/index.html
 
+# We copy requirements.txt by itself so that changes to the scripts will be in a later layer
+# and we only pip install if requirements.txt changes
+COPY tool/requirements.txt /opt/inspect/tool/requirements.txt
+RUN cd /opt/inspect/tool && pip3 install --no-cache-dir -r requirements.txt
+
+COPY tool/ /opt/inspect/tool
+COPY entrypoint/ /opt/inspect/entrypoint
+RUN chmod -R 755 /opt/inspect
+# This is needed if we want to use relative imports in the tool source files.
+ENV PYTHONPATH=/opt
+
 # setup user
-ENV USERNAME=computeruse
+ENV USERNAME=user
 ENV HOME=/home/$USERNAME
 RUN useradd -m -s /bin/bash -d $HOME $USERNAME
 RUN echo "${USERNAME} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-USER computeruse
+USER ${USERNAME}
 WORKDIR $HOME
+COPY --chown=$USERNAME:$USERNAME image_home_dir/ $HOME
 
 # configure Firefox to skip all 'first run' UI
 RUN mkdir -p $HOME/.mozilla/firefox-esr/profile.default && \
     echo 'user_pref("browser.startup.homepage_override.mstone", "ignore");' >> $HOME/.mozilla/firefox-esr/profile.default/user.js && \
     echo 'user_pref("browser.aboutwelcome.enabled", false);' >> $HOME/.mozilla/firefox-esr/profile.default/user.js && \
     echo 'user_pref("datareporting.policy.firstRunURL", "");' >> $HOME/.mozilla/firefox-esr/profile.default/user.js 
-
-# only reinstall if requirements.txt changes
-COPY computer_tool/requirements.txt /opt/computer_tool/requirements.txt
-RUN cd /opt/computer_tool && pip3 install --no-cache-dir -r requirements.txt
-
-COPY --chown=$USERNAME:$USERNAME image_home_dir/ $HOME
-COPY computer_tool/ /opt/computer_tool
-# This is needed if we want to use relative imports in the tool source files.
-ENV PYTHONPATH=/opt
-
+    
 EXPOSE 5900
 EXPOSE 6080
 
@@ -106,4 +109,4 @@ ENV DISPLAY_NUM=$DISPLAY_NUM
 ENV HEIGHT=$HEIGHT
 ENV WIDTH=$WIDTH
 
-ENTRYPOINT [ "./entrypoint.sh" ]
+ENTRYPOINT [ "/opt/inspect/entrypoint/entrypoint.sh" ]
