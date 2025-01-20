@@ -6,9 +6,9 @@ import os
 import sys
 import time
 
-from ._logger import setup_logger
-from ._tool_result import ToolResult
-from ._x11_client import X11Client
+from _logger import setup_logger
+from _tool_result import ToolResult
+from _x11_client import X11Client
 
 # This is a bit sketchy. We really want to use relative imports here. Using absolute imports
 # works at runtime, but it prevents intellisense from working. However, when this folder is

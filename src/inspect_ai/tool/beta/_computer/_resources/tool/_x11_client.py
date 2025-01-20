@@ -9,8 +9,8 @@ from pathlib import Path
 from typing import Literal, TypedDict
 from uuid import uuid4
 
-from ._run import run
-from ._tool_result import ToolResult
+from _run import run
+from _tool_result import ToolResult
 
 OUTPUT_DIR = "/tmp/outputs"
 

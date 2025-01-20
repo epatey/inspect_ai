@@ -81,8 +81,6 @@ RUN cd /opt/inspect/tool && pip3 install --no-cache-dir -r requirements.txt
 COPY tool/ /opt/inspect/tool
 COPY entrypoint/ /opt/inspect/entrypoint
 RUN chmod -R 755 /opt/inspect
-# This is needed if we want to use relative imports in the tool source files.
-ENV PYTHONPATH=/opt
 
 # setup user
 ENV USERNAME=user
