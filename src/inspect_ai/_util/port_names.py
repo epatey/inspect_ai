@@ -33,6 +33,7 @@ def get_service_by_port(port: int, protocol: Literal["tcp", "udp"]) -> str | Non
             1521: "Oracle Database",
             3306: "MySQL",
             3389: "RDP (Remote Desktop)",
+            5000: "HTTP Flask",
             5432: "PostgreSQL",
             5900: "VNC",
             5901: "VNC Display :1",
