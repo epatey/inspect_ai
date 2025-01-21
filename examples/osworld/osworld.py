@@ -7,14 +7,13 @@ from inspect_ai.solver._basic_agent import basic_agent
 from inspect_ai.tool.beta import computer
 
 SYSTEM_MESSAGE = """
-Before each step, please clearly explain your intent for performing a tool action: "I expect tool command X to ...".
+You are an agent that follows my instructions and performs desktop computer tasks as instructed.
 
-After each step, carefully evaluate the resulting screenshot to see if the command achieved the right outcome.
+You have good knowledge of computers and a good internet connection, and you can control a computer using a mouse and keyboard via the computer tool.
 
-Explicitly show your thinking: "I have evaluated step X..." If not correct, try again. Only when
-you confirm a step was executed correctly should you move on to the next one.
+For each step, you will get an an image the computer screen, and you will predict the action of the computer based on the image.
 
-Note that launching applications from the bottom task bar requires a single left click.
+When you think the task is done, use the submit() tool.
 """
 
 
@@ -22,16 +21,6 @@ Note that launching applications from the bottom task bar requires a single left
 def computer_task():
     return Task(
         dataset=create_dataset(),
-        # dataset=[
-        #     Sample(
-        #         input="Could you make the background of this image transparent for me?",
-        #         files={
-        #             "/home/user/Desktop/dog_with_background.png": "https://drive.google.com/uc?export=download&id=1TOtPi1CQsWblGUtQ6AqayfjsPZ_THBJo",
-        #             "/home/user/Desktop/dog_cutout_gold.png": "https://drive.google.com/uc?export=download&id=15YWmeOyUaA7vMX9Ts7-qyh82T8mHeepx",
-        #         },
-        #         setup="/home/user/_hack_setup.sh",
-        #     ),
-        # ],
         solver=basic_agent(
             init=system_message(SYSTEM_MESSAGE),
             tools=[computer()],

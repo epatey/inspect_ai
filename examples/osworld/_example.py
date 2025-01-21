@@ -72,10 +72,6 @@ class Example(BaseModel):
     evaluator: Evaluator
 
 
-def example_from_file(file_path: str) -> Example | None:
+def example_from_file(file_path: str) -> Example:
     with open(file_path, "r") as file:
-        data = file.read()
-        try:
-            return Example(**json.loads(data))
-        except json.JSONDecodeError:
-            return None
+        return Example(**json.loads(file.read()))

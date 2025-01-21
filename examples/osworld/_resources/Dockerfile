@@ -36,15 +36,13 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Add a gimp icon to the task bar
-RUN echo 'launcher_item_app = /home/user/.config/tint2/applications/gimp.desktop' >> $HOME/.config/tint2/tint2rc
-RUN mkdir -p $HOME/.config/GIMP/2.10 && echo '(color-profile-policy convert)' >> $HOME/.config/GIMP/2.10/gimprc
-
-
-COPY _hack_setup.sh $HOME/
-
-
 # There may be a better way, but in order to hit the ENTRYPOINT properly, we need to
 # go back to its expected state
 USER user
 WORKDIR $HOME
+    
+# Add a gimp icon to the task bar
+RUN echo 'launcher_item_app = /home/user/.config/tint2/applications/gimp.desktop' >> $HOME/.config/tint2/tint2rc
+
+# disable profile conversion prompting
+RUN mkdir -p $HOME/.config/GIMP/2.10 && echo '(color-profile-policy convert)' >> $HOME/.config/GIMP/2.10/gimprc

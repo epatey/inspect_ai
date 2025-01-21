@@ -5,6 +5,5 @@ services:
     init: true
 
     ports:
-      - "5000"
       - "5900"
       - "6080"
