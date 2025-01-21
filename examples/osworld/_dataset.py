@@ -1,6 +1,6 @@
 import os
 
-from _example import _example_from_file
+from _example import example_from_file
 from _sparse_clone import sparse_clone_repo
 
 from inspect_ai.dataset._dataset import Dataset, MemoryDataset, Sample
@@ -24,18 +24,19 @@ def create_dataset() -> Dataset:
 
 
 def _sample_from_file(file_path: str) -> Sample | None:
-    if (
-        os.path.basename(file_path) != "2a729ded-3296-423d-aec4-7dd55ed5fbb3.json"
-        or (example := _example_from_file(file_path)) is None
-    ):
+    example = example_from_file(file_path)
+
+    if example.id != "2a729ded-3296-423d-aec4-7dd55ed5fbb3":
         return None
 
     return Sample(
         example.instruction,
+        id=example.id,
         files={
             file.path: file.url
             for config in example.config
             if config.type == "download"
             for file in config.parameters.files
         },
+        metadata={field: getattr(example, field) for field in ["snapshot", "source"]},
     )
