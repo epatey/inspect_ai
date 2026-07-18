@@ -1,0 +1,24 @@
+{
+  "name": "eval2-render-prototype",
+  "private": true,
+  "version": "0.0.0",
+  "description": "PROTOTYPE (throwaway) — windowed transcript over chunked .eval2 samples. Wayfinder ticket epatey/inspect_ai#8.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tanstack/react-virtual": "^3.10.8",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3"
+  }
+}
