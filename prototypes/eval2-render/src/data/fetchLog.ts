@@ -29,12 +29,21 @@ export async function fetchJson<T>(path: string, sequence: string): Promise<T> {
   stats.inflight += 1;
   stats.bySequence[sequence] = (stats.bySequence[sequence] ?? 0) + 1;
   notify();
+  // the path relative to the sample dir is what the zip member name would be
+  const entry = path.replace(/^.*\/samples\//, "samples/");
+  const t0 = performance.now();
   try {
     if (latencyMs > 0) await new Promise((r) => setTimeout(r, latencyMs));
     const res = await fetch(`/data/${path}`);
     if (!res.ok) throw new Error(`${res.status} fetching ${path}`);
     const text = await res.text();
     stats.bytes += text.length;
+    console.log(
+      `%c[read]%c ${entry} %c${(text.length / 1024).toFixed(0)}KB in ${Math.round(performance.now() - t0)}ms (#${stats.requests})`,
+      "color:#4c6ef5;font-weight:bold",
+      "color:inherit",
+      "color:#868e96",
+    );
     return JSON.parse(text) as T;
   } finally {
     stats.inflight -= 1;
