@@ -41,7 +41,6 @@ content-addressed and checkpoint files overwrite cleanly).
 from __future__ import annotations
 
 import os
-import re
 from logging import getLogger
 from pathlib import Path
 
@@ -49,6 +48,7 @@ from inspect_ai._util.asyncfiles import get_async_filesystem
 from inspect_ai._util.trace import trace_action
 
 from ._async_fs import async_mkdir
+from ._layout.sample_checkpoints_dir import checkpoint_file_id
 from ._layout.schemas import Checkpoint
 
 logger = getLogger(__name__)
@@ -62,11 +62,6 @@ MANIFEST_FILENAME = ".egress-manifest.txt"
 # bookkeeping.
 _EXCLUDED_TOP_LEVEL: frozenset[str] = frozenset({"context", MANIFEST_FILENAME})
 
-# Tier ordering: (priority, regex matching the path's relative form).
-# A new file's tier is the lowest-priority matching pattern, defaulting
-# to a catch-all bucket if none match (which shouldn't happen for
-# well-formed restic content).
-_CHECKPOINT_FILE_RE = re.compile(r"^ckpt-\d+\.json$")
 _RESTIC_CONFIG = "restic/restic-config.json"
 
 
@@ -146,7 +141,7 @@ def _scan_new_files(staging: Path, shipped: set[str]) -> list[str]:
 
 
 def _committed_checkpoint_or_other(staging: Path, rel: str) -> bool:
-    if not _CHECKPOINT_FILE_RE.match(Path(rel).name):
+    if checkpoint_file_id(Path(rel).name) is None:
         return True
     try:
         Checkpoint.model_validate_json((staging / rel).read_bytes())
@@ -162,14 +157,15 @@ def _safe_order(files: list[str]) -> list[str]:
     index: list[str] = []
     snapshots: list[str] = []
     restic_config: list[str] = []
-    checkpoint_files: list[str] = []
+    checkpoint_files: list[tuple[int, str]] = []
     other: list[str] = []
     for f in files:
         parts = f.split("/")
+        checkpoint_id = checkpoint_file_id(parts[-1])
         if f == _RESTIC_CONFIG:
             restic_config.append(f)
-        elif _CHECKPOINT_FILE_RE.match(parts[-1]):
-            checkpoint_files.append(f)
+        elif checkpoint_id is not None:
+            checkpoint_files.append((checkpoint_id, f))
         elif "data" in parts:
             data.append(f)
         elif "index" in parts:
@@ -191,13 +187,7 @@ def _safe_order(files: list[str]) -> list[str]:
         # a multi-file ship interrupted part way through must leave the
         # *latest* at the destination — a stale-prefix dir would resolve
         # to an old checkpoint
-        + sorted(
-            checkpoint_files,
-            key=lambda f: int(
-                f.rsplit("/", 1)[-1].removeprefix("ckpt-").removesuffix(".json")
-            ),
-            reverse=True,
-        )
+        + [f for _, f in sorted(checkpoint_files, reverse=True)]
     )
 
 

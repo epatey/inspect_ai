@@ -3,15 +3,19 @@
 from __future__ import annotations
 
 import json
+import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
+import pytest
+
 from inspect_ai.util._checkpoint._layout.sample_checkpoints_dir import (
     _read_restic_config,
+    checkpoint_file_id,
+    checkpoint_file_name,
     delete_sample_checkpoints_dir,
     ensure_restic_config,
     ensure_sample_checkpoints_dir,
-    resolve_resumable_sample_dir,
     sample_checkpoints_dir,
     scan_latest_committed_checkpoint,
     write_checkpoint_file,
@@ -281,14 +285,13 @@ async def _dir_with_checkpoint(root: Path, name: str) -> str:
 
 
 async def test_resolve_committed_checkpoint_resolves_to_dir(tmp_path: Path) -> None:
-    """A dir with a committed checkpoint resolves to itself."""
+    """A dir with a committed checkpoint resolves to that checkpoint."""
     sample_dir = await _dir_with_checkpoint(tmp_path, "a")
 
-    resolved = await resolve_resumable_sample_dir(sample_dir)
+    checkpoint = await scan_latest_committed_checkpoint(sample_dir)
 
-    assert resolved is not None
-    assert resolved.sample_dir == sample_dir
-    assert resolved.checkpoint.checkpoint_id == 1
+    assert checkpoint is not None
+    assert checkpoint.checkpoint_id == 1
 
 
 async def test_resolve_none_when_nothing_committed(tmp_path: Path) -> None:
@@ -296,9 +299,19 @@ async def test_resolve_none_when_nothing_committed(tmp_path: Path) -> None:
     sample_dir = await ensure_sample_checkpoints_dir(
         str(tmp_path / "a.checkpoints"), "s", 0
     )
-    assert await resolve_resumable_sample_dir(sample_dir) is None
+    assert await scan_latest_committed_checkpoint(sample_dir) is None
     # missing dir behaves the same as an empty one
-    assert await resolve_resumable_sample_dir(str(tmp_path / "missing")) is None
+    assert (await scan_latest_committed_checkpoint(str(tmp_path / "missing"))) is None
+
+
+def test_checkpoint_file_grammar_round_trips() -> None:
+    """The name/id pair is the single authority on the ckpt file grammar."""
+    assert checkpoint_file_name(7) == "ckpt-00007.json"
+    assert checkpoint_file_id("ckpt-00007.json") == 7
+    assert checkpoint_file_id("ckpt-123456.json") == 123456
+    assert checkpoint_file_id("ckpt-x.json") is None
+    assert checkpoint_file_id("ckpt-7.json.tmp") is None
+    assert checkpoint_file_id("restic-config.json") is None
 
 
 async def test_delete_sample_checkpoints_dir(tmp_path: Path) -> None:
@@ -318,3 +331,35 @@ async def test_delete_sample_checkpoints_dir(tmp_path: Path) -> None:
 
     assert not Path(sample_dir).exists()
     await delete_sample_checkpoints_dir(eval_dir, "s", 0)  # idempotent
+
+
+async def test_delete_sample_checkpoints_dir_decommits_before_data(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A local delete removes checkpoint files before the restic data.
+
+    An interrupted delete must leave an uncommitted dir (no checkpoint
+    files), never a dir whose checkpoint file survives its data — that
+    torn state would resolve as resumable and fail every future retry.
+    """
+    eval_dir = str(tmp_path / "a.checkpoints")
+    sample_dir = await ensure_sample_checkpoints_dir(eval_dir, "s", 0)
+    (Path(sample_dir) / "restic" / "host").mkdir(parents=True)
+    (Path(sample_dir) / "restic" / "host" / "config").write_text("cfg")
+    await write_checkpoint_file(
+        sample_checkpoints_dir=sample_dir,
+        checkpoint=_checkpoint(
+            checkpoint_id=1, trigger="turn", turn=1, host=_info("snap-1")
+        ),
+    )
+
+    def interrupted_rmtree(*args: object, **kwargs: object) -> None:
+        raise RuntimeError("interrupted mid-delete")
+
+    monkeypatch.setattr(shutil, "rmtree", interrupted_rmtree)
+    with pytest.raises(RuntimeError):
+        await delete_sample_checkpoints_dir(eval_dir, "s", 0)
+
+    # de-committed: checkpoint files already gone, data still present
+    assert not list(Path(sample_dir).glob("ckpt-*.json"))
+    assert (Path(sample_dir) / "restic" / "host" / "config").exists()

@@ -139,12 +139,14 @@ from inspect_ai.solver._fork import set_task_generate
 from inspect_ai.solver._solver import Solver
 from inspect_ai.solver._task_state import sample_state, set_sample_state, state_jsonable
 from inspect_ai.util._anyio import inner_exception
+from inspect_ai.util._checkpoint._async_fs import async_dir_names
 from inspect_ai.util._checkpoint._layout import (
     delete_sample_checkpoints_dir,
     eval_checkpoints_dir_from_config,
-    resolve_resumable_sample_dir,
     sample_checkpoints_dir,
+    scan_latest_committed_checkpoint,
 )
+from inspect_ai.util._checkpoint._layout.sample_checkpoints_dir import sample_dir_name
 from inspect_ai.util._checkpoint._resume_copy import copy_resume_payloads
 from inspect_ai.util._checkpoint.checkpointer import ResumeCheckpoint
 from inspect_ai.util._checkpoint.config import (
@@ -1054,7 +1056,11 @@ async def task_run(options: TaskRunOptions, task_cancel: TaskCancel | None) -> E
                             # invalidation means start over: discard the
                             # sample's copied checkpoints (the startup copy
                             # replicated them) and run fresh
-                            if requeue_checkpoints_dir is not None:
+                            if (
+                                requeue_checkpoints_dir is not None
+                                and sample_dir_name(sample_id, epoch)
+                                in resumable_sample_dirs
+                            ):
                                 async with resume_probe_limiter:
                                     await delete_sample_checkpoints_dir(
                                         requeue_checkpoints_dir, sample_id, epoch
@@ -1064,13 +1070,19 @@ async def task_run(options: TaskRunOptions, task_cancel: TaskCancel | None) -> E
                             # log): prefer resuming from a checkpoint in
                             # this attempt's own dir (the startup copy put
                             # the payload there — see
-                            # `copy_resume_payloads`). Hydration runs inside
+                            # `copy_resume_payloads`; samples with no dir
+                            # in the startup enumeration skip the probe).
+                            # Hydration runs inside
                             # `_CheckpointerSetup.__aenter__`; agent code
                             # can branch on `cp.attempt`.
-                            async with resume_probe_limiter:
-                                resume_checkpoint = await _resume_if_checkpointed(
-                                    requeue_checkpoints_dir, sample_id, epoch
-                                )
+                            if (
+                                sample_dir_name(sample_id, epoch)
+                                in resumable_sample_dirs
+                            ):
+                                async with resume_probe_limiter:
+                                    resume_checkpoint = await _resume_if_checkpointed(
+                                        requeue_checkpoints_dir, sample_id, epoch
+                                    )
                             if resume_checkpoint is None and isinstance(
                                 previous_sample, PreviousError
                             ):
@@ -1350,6 +1362,18 @@ async def task_run(options: TaskRunOptions, task_cancel: TaskCancel | None) -> E
                 # attempt's payloads there
                 requeue_checkpoints_dir = eval_checkpoints_dir_from_config(
                     logger.location, checkpoint, eval_checkpoint
+                )
+
+                # enumerate once which sample dirs that copy (or a same-dir
+                # prior attempt) actually left there: the dispatch-time
+                # resume probes below fire only for samples with a dir,
+                # rather than one remote listing per planned sample. The
+                # requeue path's probe stays unconditional — it must see
+                # checkpoints fired during this attempt.
+                resumable_sample_dirs = (
+                    set(await async_dir_names(requeue_checkpoints_dir))
+                    if requeue_checkpoints_dir is not None and sample_source is not None
+                    else set[str]()
                 )
 
                 # the sample fanout: an injectable scheduler rather than a
@@ -2769,18 +2793,16 @@ async def _resume_if_checkpointed(
     """
     if eval_checkpoints_dir is None:
         return None
-    resolved = await resolve_resumable_sample_dir(
+    checkpoint = await scan_latest_committed_checkpoint(
         sample_checkpoints_dir(eval_checkpoints_dir, id, epoch)
     )
-    if resolved is None:
+    if checkpoint is None:
         return None
     # Latest parseable checkpoint with ``trigger == "agent_complete"`` =
     # agent finished cleanly, scoring is the next thing → retry can
     # skip the agent loop (the ``"resume_for_scoring"`` attempt).
     attempt: Literal["initial", "resume", "resume_for_scoring"] = (
-        "resume_for_scoring"
-        if resolved.checkpoint.trigger == "agent_complete"
-        else "resume"
+        "resume_for_scoring" if checkpoint.trigger == "agent_complete" else "resume"
     )
     return ResumeCheckpoint(attempt=attempt)
 

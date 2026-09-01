@@ -18,13 +18,15 @@ The design is one rule with two supports:
   that *exists*, so a log's existence proves its checkpoint dirs are
   complete; a dead attempt's partial copies are unreachable orphans.
 - **The copy replicates the whole attempt.** Every sample dir the
-  source has is copied — completed samples included. Checkpoints are a
-  permanent record (planned work allows branching from arbitrary
-  checkpoints), so each attempt with a log is a complete,
-  self-contained archive and everything older is superseded.
+  source has with a committed checkpoint is copied — completed samples
+  included. Checkpoints are a permanent record (planned work allows
+  branching from arbitrary checkpoints), so each attempt with a log is
+  a complete, self-contained archive and everything older is
+  superseded. A dir with no checkpoint file holds nothing committed
+  and is skipped (see ``_copy_sample_dir``).
 
 Resume detection then never looks past a sample's own dir
-(``resolve_resumable_sample_dir``): a sample either has a committed
+(``scan_latest_committed_checkpoint``): a sample either has a committed
 checkpoint in this attempt or it runs fresh. Within one sample, files
 still copy in commit-point order (checkpoint files last, newest-first)
 so every intermediate state stays honest, though recovery no longer
@@ -40,21 +42,23 @@ import anyio
 
 from inspect_ai._util._async import tg_collect
 from inspect_ai._util.asyncfiles import get_async_filesystem
-from inspect_ai._util.file import dirname
+from inspect_ai._util.file import basename, dirname
 from inspect_ai._util.trace import trace_action
 
-from ._async_fs import async_mkdir
+from ._async_fs import async_dir_names, async_mkdir
+from ._layout.sample_checkpoints_dir import checkpoint_file_id, checkpoint_file_name
 
 logger = getLogger(__name__)
 
 # How many samples copy concurrently during the startup copy, and how
-# many files copy concurrently within one repo. Each sample fans its
-# repo copies out in parallel (host + each sandbox), so the fan-out
-# product — samples × repos × files — must stay under the shared S3
-# client's 50-connection pool (8 × 2 × 3 = 48 for the common
-# one-sandbox case).
+# many files copy concurrently across the whole pass. The file limiter
+# is shared by every repo of every sample (a per-repo bound would let
+# the product samples × repos × files exceed the pool for multi-sandbox
+# tasks), so total concurrent S3 ops stay comfortably under the shared
+# client's 50-connection pool: 24 file copies + a few listing/config
+# ops per in-flight sample.
 _STARTUP_COPY_CONCURRENCY = 8
-_REPO_FILE_COPY_CONCURRENCY = 3
+_PAYLOAD_FILE_COPY_CONCURRENCY = 24
 
 
 class _MissingRepoError(RuntimeError):
@@ -92,14 +96,15 @@ async def copy_resume_payloads(
         f"eval {source_eval_dir} -> {destination_eval_dir}",
     ):
         await async_mkdir(destination_eval_dir)
-        sample_dirs = await _dir_names(source_eval_dir)
+        sample_dirs = await async_dir_names(source_eval_dir)
         if sample_dirs:
             logger.info(
                 f"Checkpoint resume: copying {len(sample_dirs)} sample "
                 f"dir(s) from {source_eval_dir}"
             )
             limiter = anyio.CapacityLimiter(_STARTUP_COPY_CONCURRENCY)
-            await tg_collect(
+            file_limiter = anyio.CapacityLimiter(_PAYLOAD_FILE_COPY_CONCURRENCY)
+            copied = await tg_collect(
                 [
                     partial(
                         _copy_sample_dir,
@@ -107,10 +112,16 @@ async def copy_resume_payloads(
                         destination_eval_dir,
                         name,
                         limiter,
+                        file_limiter,
                     )
                     for name in sample_dirs
                 ]
             )
+            if skipped := copied.count(False):
+                logger.info(
+                    f"Checkpoint resume: skipped {skipped} sample dir(s) "
+                    "holding no committed checkpoint"
+                )
 
 
 async def _copy_sample_dir(
@@ -118,11 +129,24 @@ async def _copy_sample_dir(
     destination_eval_dir: str,
     name: str,
     limiter: anyio.CapacityLimiter,
-) -> None:
+    file_limiter: anyio.CapacityLimiter,
+) -> bool:
+    """Copy one sample dir; return whether it was copied (False = skipped)."""
     async with limiter:
+        source_dir = f"{source_eval_dir}/{name}"
+        # a dir with no checkpoint file holds nothing committed (the
+        # sample never fired, or its dir was torn by an interrupted
+        # invalidation delete). Copying it anyway would hand the "fresh"
+        # re-run a stale initialized repo — undead snapshots on local
+        # destinations, a repo-key mismatch that fails every fire for
+        # sandboxes — so skip it and let the re-run provision cleanly.
+        if not await _checkpoint_entries(source_dir):
+            return False
         try:
             await copy_payload_files(
-                f"{source_eval_dir}/{name}", f"{destination_eval_dir}/{name}"
+                source_dir,
+                f"{destination_eval_dir}/{name}",
+                file_limiter=file_limiter,
             )
         except _MissingRepoError as ex:
             if ex.subpath != "restic/host":
@@ -132,20 +156,28 @@ async def _copy_sample_dir(
             # loses nothing, and it must not poison this source forever.
             # Anything else propagates and fails the retry.
             logger.warning(f"Checkpoint resume: skipping sample dir {name}: {ex}")
+            return False
+        return True
 
 
-async def _dir_names(base: str) -> list[str]:
-    """Terminal names of ``base``'s immediate subdirectories (missing → [])."""
-    names: list[str] = []
-    try:
-        async for uri in get_async_filesystem().iter_dirs(base):
-            names.append(uri.rstrip("/").rsplit("/", 1)[-1])
-    except FileNotFoundError:
-        pass
-    return names
+async def _checkpoint_entries(sample_dir: str) -> list[tuple[int, str]]:
+    """``(id, uri)`` of each canonical checkpoint file in ``sample_dir``, newest first."""
+    entries = [
+        (checkpoint_id, uri)
+        async for uri in get_async_filesystem().iter_files(
+            sample_dir, pattern="ckpt-*.json"
+        )
+        if (checkpoint_id := checkpoint_file_id(basename(uri))) is not None
+    ]
+    return sorted(entries, reverse=True)
 
 
-async def copy_payload_files(source_dir: str, destination_dir: str) -> list[str]:
+async def copy_payload_files(
+    source_dir: str,
+    destination_dir: str,
+    *,
+    file_limiter: anyio.CapacityLimiter | None = None,
+) -> list[str]:
     """Copy the checkpoint payload from one sample dir to another.
 
     Either side may be local or remote. Copies restic repos (host +
@@ -161,9 +193,15 @@ async def copy_payload_files(source_dir: str, destination_dir: str) -> list[str]
     Also used by ``hydrate`` to pull a remote destination's payload
     into its local staging dir.
 
+    ``file_limiter`` bounds concurrent per-file copies across every
+    repo this call touches; the startup copy passes one limiter shared
+    across all its samples, a solo call gets its own.
+
     Returns the list of paths written, relative to ``destination_dir``.
     """
-    sandbox_names = await _dir_names(f"{source_dir}/restic/sandboxes")
+    if file_limiter is None:
+        file_limiter = anyio.CapacityLimiter(_PAYLOAD_FILE_COPY_CONCURRENCY)
+    sandbox_names = await async_dir_names(f"{source_dir}/restic/sandboxes")
     written_per_repo = await tg_collect(
         [
             partial(
@@ -171,6 +209,7 @@ async def copy_payload_files(source_dir: str, destination_dir: str) -> list[str]
                 source_dir,
                 "restic/host",
                 f"{destination_dir}/restic/host",
+                file_limiter,
                 label="host",
             ),
             *[
@@ -179,6 +218,7 @@ async def copy_payload_files(source_dir: str, destination_dir: str) -> list[str]
                     source_dir,
                     name,
                     destination_dir,
+                    file_limiter,
                 )
                 for name in sandbox_names
             ],
@@ -191,7 +231,10 @@ async def copy_payload_files(source_dir: str, destination_dir: str) -> list[str]
 
 
 async def _copy_sandbox_repo(
-    source_dir: str, name: str, destination_dir: str
+    source_dir: str,
+    name: str,
+    destination_dir: str,
+    file_limiter: anyio.CapacityLimiter,
 ) -> list[str]:
     """Copy one sandbox repo, tolerating an empty source dir.
 
@@ -208,6 +251,7 @@ async def _copy_sandbox_repo(
             source_dir,
             f"restic/sandboxes/{name}",
             f"{destination_dir}/restic/sandboxes/{name}",
+            file_limiter,
             label=f"sandbox {name!r}",
         )
     except _MissingRepoError as ex:
@@ -259,24 +303,22 @@ async def _fs_copy_checkpoint_files(
     written: list[str] = []
 
     with trace_action(logger, "Checkpoint Resume Copy", "fs-copy checkpoint files"):
-        entries: list[tuple[int, str]] = []
-        async for uri in async_fs.iter_files(old_sample_dir, pattern="ckpt-*.json"):
-            name = uri.rsplit("/", 1)[-1]
-            try:
-                checkpoint_id = int(name.removeprefix("ckpt-").removesuffix(".json"))
-            except ValueError:
-                continue
-            entries.append((checkpoint_id, uri))
+        entries = await _checkpoint_entries(old_sample_dir)
         await async_mkdir(new_sample_dir)
-        for checkpoint_id, uri in sorted(entries, reverse=True):
-            name = f"ckpt-{checkpoint_id:05d}.json"
+        for checkpoint_id, uri in entries:
+            name = checkpoint_file_name(checkpoint_id)
             await async_fs.copy_file(uri, f"{new_sample_dir}/{name}")
             written.append(name)
     return written
 
 
 async def _fs_copy_repo(
-    old_sample_dir: str, subpath: str, new_repo: str, *, label: str
+    old_sample_dir: str,
+    subpath: str,
+    new_repo: str,
+    file_limiter: anyio.CapacityLimiter,
+    *,
+    label: str,
 ) -> list[str]:
     """Recursively copy a restic repo subtree from old sample dir to new.
 
@@ -314,10 +356,9 @@ async def _fs_copy_repo(
         # these bytes copy separately, afterward).
         for parent in {dirname(f"{new_repo}/{rel}") for rel in rels}:
             await async_mkdir(parent)
-        limiter = anyio.CapacityLimiter(_REPO_FILE_COPY_CONCURRENCY)
 
         async def copy_one(rel: str) -> None:
-            async with limiter:
+            async with file_limiter:
                 await async_fs.copy_file(f"{src_base}/{rel}", f"{new_repo}/{rel}")
 
         await tg_collect([partial(copy_one, rel) for rel in rels])

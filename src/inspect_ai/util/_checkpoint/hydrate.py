@@ -502,10 +502,7 @@ async def _delete_snapshot_objects(repo_dir: str, snapshot_ids: list[str]) -> No
     """
     async_fs = get_async_filesystem()
     for snapshot_id in snapshot_ids:
-        try:
-            await async_fs.delete_file(f"{repo_dir}/snapshots/{snapshot_id}")
-        except FileNotFoundError:
-            pass
+        await async_fs.delete_file(f"{repo_dir}/snapshots/{snapshot_id}")
 
 
 def _load_host_state(

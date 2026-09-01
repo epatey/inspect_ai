@@ -129,7 +129,12 @@ async def test_copy_resume_payloads_failure_raises(
     dest_eval = tmp_path / "new.checkpoints"
 
     async def failing_copy_repo(
-        old_sample_dir: str, subpath: str, new_repo: str, *, label: str
+        old_sample_dir: str,
+        subpath: str,
+        new_repo: str,
+        file_limiter: object,
+        *,
+        label: str,
     ) -> list[str]:
         raise OSError("simulated transient failure")
 
@@ -152,7 +157,9 @@ async def test_copy_resume_payloads_skips_sample_dir_without_host_repo(
     """
     source_eval = tmp_path / "old.checkpoints"
     _build_payload(source_eval / "s1__1", checkpoint_ids=[1])
-    (source_eval / "s2__1" / "context").mkdir(parents=True)  # no restic/host
+    # a checkpoint file but no restic/host repo behind it
+    (source_eval / "s2__1").mkdir(parents=True)
+    (source_eval / "s2__1" / "ckpt-00001.json").write_text(_checkpoint_json(1))
     dest_eval = tmp_path / "new.checkpoints"
 
     await copy_resume_payloads(
@@ -161,6 +168,32 @@ async def test_copy_resume_payloads_skips_sample_dir_without_host_repo(
     )
 
     _assert_payload_copied(dest_eval / "s1__1", checkpoint_ids=[1])
+    assert not (dest_eval / "s2__1" / "restic").exists()
+
+
+async def test_copy_resume_payloads_skips_sample_dir_without_checkpoint_file(
+    tmp_path: Path,
+) -> None:
+    """A dir with repos but no checkpoint file holds nothing committed.
+
+    Copying it would hand the "fresh" re-run a stale initialized repo
+    (undead snapshots locally, a repo-key mismatch that fails every
+    fire for sandboxes) — the copy skips it so the re-run provisions
+    cleanly. Also covers a dir torn by an interrupted invalidation
+    delete, whose checkpoint files are removed first.
+    """
+    source_eval = tmp_path / "old.checkpoints"
+    _build_payload(source_eval / "s1__1", checkpoint_ids=[1])
+    _build_payload(source_eval / "s2__1", checkpoint_ids=[])  # never fired
+    dest_eval = tmp_path / "new.checkpoints"
+
+    await copy_resume_payloads(
+        source_eval_dir=str(source_eval),
+        destination_eval_dir=str(dest_eval),
+    )
+
+    _assert_payload_copied(dest_eval / "s1__1", checkpoint_ids=[1])
+    assert not (dest_eval / "s2__1").exists()
 
 
 async def test_copy_resume_payloads_tolerates_empty_sandbox_repo_dir(

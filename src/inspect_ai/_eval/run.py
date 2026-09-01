@@ -8,7 +8,6 @@ from typing import Any, Awaitable, Callable, Iterable, NamedTuple, Set, cast
 
 from inspect_ai._eval.task.constants import TASK_ALL_PARAMS_ATTR
 from inspect_ai._util._async import Wake
-from inspect_ai._util.asyncfiles import get_async_filesystem
 from inspect_ai._util.environ import environ_vars
 from inspect_ai._util.file import cleanup_s3_sessions
 from inspect_ai._util.task import task_display_name
@@ -748,19 +747,13 @@ async def run_task_retry_attempts(
                         # copy failed pre-log_start) left no file — chain the
                         # retry from whatever *it* was retrying instead, so
                         # reuse and checkpoints fall back a hop rather than
-                        # sourcing an attempt that holds nothing.
+                        # sourcing an attempt that holds nothing. The logger
+                        # knows in-process whether the attempt ever wrote its
+                        # destination, so no remote existence probe (which
+                        # could itself fail on the flaky storage being
+                        # retried) is needed.
                         sample_source: EvalSampleSource | None
-                        try:
-                            failed_log_exists = await get_async_filesystem().exists(
-                                options.logger.location
-                            )
-                        except Exception:
-                            # can't tell (e.g. log storage still flaky — the
-                            # very condition being retried): take the
-                            # pre-existing path and let per-lookup handling
-                            # degrade, rather than aborting the whole run
-                            failed_log_exists = True
-                        if failed_log_exists:
+                        if options.logger.destination_written:
                             failed_log_info = EvalLogInfo(
                                 name=options.logger.location,
                                 type="file",

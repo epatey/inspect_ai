@@ -38,7 +38,12 @@ _fired = False
 
 
 async def _interrupting_fs_copy_repo(
-    old_sample_dir: str, subpath: str, new_repo: str, *, label: str
+    old_sample_dir: str,
+    subpath: str,
+    new_repo: str,
+    file_limiter: anyio.CapacityLimiter,
+    *,
+    label: str,
 ) -> list[str]:
     global _fired
     if not _fired:
@@ -48,7 +53,9 @@ async def _interrupting_fs_copy_repo(
         # call would have performed is "still in flight" when the
         # interrupt's cancellation arrives here
         await anyio.sleep_forever()
-    return await _original_fs_copy_repo(old_sample_dir, subpath, new_repo, label=label)
+    return await _original_fs_copy_repo(
+        old_sample_dir, subpath, new_repo, file_limiter, label=label
+    )
 
 
 # Distinct exit code asserted by the test: the hook never fired, so the

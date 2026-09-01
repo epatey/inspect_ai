@@ -18,17 +18,18 @@ The optional ``_<retry>`` suffix on the dir name is omitted until
 
 from __future__ import annotations
 
+import re
 import secrets
 import shutil
-from functools import partial
 from logging import getLogger
-from typing import NamedTuple, TypeVar
+from pathlib import Path
+from typing import TypeVar
 
 import anyio.to_thread
 from pydantic import BaseModel
 
 from inspect_ai._util.asyncfiles import get_async_filesystem
-from inspect_ai._util.file import filesystem, local_path
+from inspect_ai._util.file import basename, filesystem, local_path
 
 from .._async_fs import async_mkdir
 from .schemas import Checkpoint, ResticConfig
@@ -37,6 +38,25 @@ from .staging_dir import restic_config_path, restic_dir
 logger = getLogger(__name__)
 
 _M = TypeVar("_M", bound=BaseModel)
+
+
+_CHECKPOINT_FILE_RE = re.compile(r"^ckpt-(\d+)\.json$")
+
+
+def checkpoint_file_name(checkpoint_id: int) -> str:
+    """The canonical ``ckpt-NNNNN.json`` file name for ``checkpoint_id``."""
+    return f"ckpt-{checkpoint_id:05d}.json"
+
+
+def checkpoint_file_id(name: str) -> int | None:
+    """Parse a checkpoint file name into its id (``None`` if it isn't one).
+
+    With :func:`checkpoint_file_name`, the single authority on the
+    checkpoint file-name grammar — every site that enumerates, orders,
+    or constructs checkpoint files goes through this pair.
+    """
+    match = _CHECKPOINT_FILE_RE.match(name)
+    return int(match.group(1)) if match else None
 
 
 def sample_dir_name(sample_id: int | str, epoch: int) -> str:
@@ -106,19 +126,15 @@ async def scan_latest_committed_checkpoint(
     to lowest; the first whose contents validate as a
     :class:`Checkpoint` is the commit point. A torn-write checkpoint
     file is silently skipped. Returns ``None`` if no checkpoint file
-    exists or none parses (caller is responsible for treating that as
-    a meaningful state — typically an error on resume).
+    exists or none parses — a missing or empty dir means the sample
+    runs fresh; detection never looks past a sample's own dir (the
+    startup copy already brought everything a clean attempt has — see
+    ``_resume_copy``).
     """
     ids = await _list_checkpoint_ids(sample_checkpoints_dir)
-    return await _first_parseable_checkpoint(sample_checkpoints_dir, ids)
-
-
-async def _first_parseable_checkpoint(
-    sample_checkpoints_dir: str, ids: list[int]
-) -> Checkpoint | None:
     async_fs = get_async_filesystem()
     for n in sorted(ids, reverse=True):
-        path = f"{sample_checkpoints_dir}/ckpt-{n:05d}.json"
+        path = f"{sample_checkpoints_dir}/{checkpoint_file_name(n)}"
         try:
             raw = await async_fs.read_file(path)
             return Checkpoint.model_validate_json(raw)
@@ -128,40 +144,19 @@ async def _first_parseable_checkpoint(
             # lower checkpoint. Anything else (e.g. a transient S3 error)
             # propagates: this scan is a sample's only shot at resuming,
             # and swallowing an I/O failure would silently run it fresh.
+            # On the resume path nothing catches it below the task, so it
+            # fails the whole attempt — the task-level retry re-probes,
+            # trading a retry hop for never losing progress silently.
             continue
-    return None
-
-
-class ResolvedResumeDir(NamedTuple):
-    """A sample dir holding a committed checkpoint, plus that checkpoint."""
-
-    sample_dir: str
-    checkpoint: Checkpoint
-
-
-async def resolve_resumable_sample_dir(sample_dir: str) -> ResolvedResumeDir | None:
-    """The dir plus its latest committed checkpoint, or ``None``.
-
-    ``None`` means the dir holds no committed checkpoint (it doesn't
-    exist, is empty, or its files never committed) — the sample runs
-    fresh. Detection never looks past a sample's own dir: the startup
-    copy already brought everything a clean attempt has (see
-    ``_resume_copy``).
-    """
-    # one listing serves both the scan and the none-parse warning below
-    ids = await _list_checkpoint_ids(sample_dir)
-    checkpoint = await _first_parseable_checkpoint(sample_dir, ids)
-    if checkpoint is not None:
-        return ResolvedResumeDir(sample_dir=sample_dir, checkpoint=checkpoint)
     # checkpoint files present but none parse: surface it — resume
     # used to fail loudly here, and silently running fresh would
     # hide substantial progress loss (the restic repos may be fine)
     if ids:
         logger.warning(
-            f"Checkpoint files exist in {sample_dir} but none parse as a "
-            "valid checkpoint; treating the dir as holding no committed "
-            "checkpoint. The restic repos may still be intact — see the "
-            "checkpoint docs for manual recovery."
+            f"Checkpoint files exist in {sample_checkpoints_dir} but none "
+            "parse as a valid checkpoint; treating the dir as holding no "
+            "committed checkpoint. The restic repos may still be intact — "
+            "see the checkpoint docs for manual recovery."
         )
     return None
 
@@ -177,8 +172,20 @@ async def delete_sample_checkpoints_dir(
     """
     target = sample_checkpoints_dir(eval_dir, sample_id, epoch)
     if filesystem(target).is_local():
+
+        def rm_local() -> None:
+            # checkpoint files first (mirroring the remote branch below):
+            # they are the dir's commit point, so an interrupted delete
+            # de-commits the dir before touching the restic data — a torn
+            # dir then reads as "nothing committed" rather than resolving
+            # a checkpoint whose data is gone
+            root = Path(local_path(target))
+            for entry in root.glob("ckpt-*.json"):
+                entry.unlink(missing_ok=True)
+            shutil.rmtree(root)
+
         try:
-            await anyio.to_thread.run_sync(partial(shutil.rmtree, local_path(target)))
+            await anyio.to_thread.run_sync(rm_local)
         except FileNotFoundError:
             pass
         return
@@ -191,12 +198,9 @@ async def delete_sample_checkpoints_dir(
         files = []
     # checkpoint files first: they are the dir's commit point, so an
     # interrupted delete de-commits the dir before touching its data
-    files.sort(key=lambda uri: not uri.rsplit("/", 1)[-1].startswith("ckpt-"))
+    files.sort(key=lambda uri: checkpoint_file_id(basename(uri)) is None)
     for uri in files:
-        try:
-            await async_fs.delete_file(uri)
-        except FileNotFoundError:
-            pass
+        await async_fs.delete_file(uri)
 
 
 async def write_checkpoint_file(
@@ -213,7 +217,7 @@ async def write_checkpoint_file(
     costs at most one checkpoint's progress — same as crashing before
     the file starts.
     """
-    path = f"{sample_checkpoints_dir}/ckpt-{checkpoint.checkpoint_id:05d}.json"
+    path = f"{sample_checkpoints_dir}/{checkpoint_file_name(checkpoint.checkpoint_id)}"
     await _write_model_json(path, checkpoint)
     return path
 
@@ -232,11 +236,9 @@ async def _list_checkpoint_ids(sample_dir: str) -> list[int]:
         async for uri in get_async_filesystem().iter_files(
             sample_dir, pattern="ckpt-*.json"
         ):
-            name = uri.rsplit("/", 1)[-1]
-            try:
-                ids.append(int(name.removeprefix("ckpt-").removesuffix(".json")))
-            except ValueError:
-                continue
+            checkpoint_id = checkpoint_file_id(basename(uri))
+            if checkpoint_id is not None:
+                ids.append(checkpoint_id)
     except FileNotFoundError:
         pass
     return ids

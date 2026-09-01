@@ -530,10 +530,12 @@ class AsyncFilesystem(AbstractAsyncContextManager["AsyncFilesystem"]):
             await self.write_file(destination, await self.read_file(source))
 
     async def delete_file(self, filename: str) -> None:
-        """Delete `filename`.
+        """Delete `filename`. Idempotent: a missing file is a no-op.
 
-        Raises `FileNotFoundError` for a missing local file; S3 deletes
-        are idempotent (no error for a missing key).
+        S3 deletes are natively idempotent (no error for a missing key);
+        the other branches swallow `FileNotFoundError` to match, since
+        every caller deletes for cleanup and must tolerate a concurrent
+        or repeated delete.
         """
         if is_s3_filename(filename):
             bucket, key = s3_bucket_and_key(filename)
@@ -545,15 +547,18 @@ class AsyncFilesystem(AbstractAsyncContextManager["AsyncFilesystem"]):
                     s3_delete_object, self.s3_client(), bucket, key
                 )
         else:
-            fs = filesystem(filename)
-            if fs.is_local():
-                await anyio.to_thread.run_sync(fs.rm, filename)
-            else:
-                # non-s3 remote: run the sync fsspec call on the loop thread
-                # rather than to_thread over fsspec's own event-loop thread
-                # (deadlock hazard; see AGENTS.md) — matches `get_file`'s
-                # non-s3 branch
-                fs.rm(filename)
+            try:
+                fs = filesystem(filename)
+                if fs.is_local():
+                    await anyio.to_thread.run_sync(fs.rm, filename)
+                else:
+                    # non-s3 remote: run the sync fsspec call on the loop
+                    # thread rather than to_thread over fsspec's own
+                    # event-loop thread (deadlock hazard; see AGENTS.md) —
+                    # matches `get_file`'s non-s3 branch
+                    fs.rm(filename)
+            except FileNotFoundError:
+                pass
 
     @overload
     def iter_files(

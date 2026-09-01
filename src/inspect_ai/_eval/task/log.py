@@ -309,6 +309,10 @@ class TaskLogger:
         # hold_destination_writes); while set, no destination write happens
         self._destination_hold = False
 
+        # whether this attempt has successfully written its destination log
+        # at least once (any flush, or log_finish) — see destination_written
+        self._destination_written = False
+
         # sample buffer db
         self._buffer_db: SampleBufferDatabase | None = None
 
@@ -370,6 +374,7 @@ class TaskLogger:
         # the retry attempt re-enters task_run, which re-sets the hold for
         # its own reuse sweep when applicable
         self._destination_hold = False
+        self._destination_written = False
         # the retry attempt gets a fresh log, which must re-record the run's
         # full accumulated process-scoped updates in init() below
         self._process_updates_recorded = 0
@@ -444,12 +449,26 @@ class TaskLogger:
         """
         self._destination_hold = True
 
+    @property
+    def destination_written(self) -> bool:
+        """Whether this attempt has written its destination log at least once.
+
+        The in-process record of the log's commit point: the retry
+        dispatcher branches on it to decide whether this attempt's log
+        exists as a resume source, without a remote existence probe
+        (which can itself fail on the flaky storage being retried).
+        True once any destination write — a flush or ``log_finish`` —
+        has succeeded for this attempt; reset by ``reinit``.
+        """
+        return self._destination_written
+
     async def log_start(self, plan: EvalPlan) -> None:
         await self.recorder.log_start(self.eval, plan)
         # while destination writes are held the start record stays journaled
         # in the recorder's temp zip and rides out with the settle flush
         if not self._destination_hold:
             await self.recorder.flush(self.eval)
+            self._destination_written = True
 
     async def start_sample(self, sample: EvalSampleSummary) -> None:
         if self._buffer_db is not None:
@@ -606,6 +625,7 @@ class TaskLogger:
                 if self.flush_quiet:
                     self.flush_quiet_retry = True
                 raise
+            self._destination_written = True
             flushed = len(pending) + len(quiet)
 
             async with self._flush_pending_lock:
@@ -960,6 +980,7 @@ class TaskLogger:
             log = await self.recorder.log_finish(
                 self.eval, status, stats, results, reductions, error, self.header_only
             )
+            self._destination_written = True
 
             # every completed sample is now on disk. Mark finished and drop the
             # pending list so the still-attached flush/buffer directives (kept

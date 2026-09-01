@@ -16,6 +16,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 
+import anyio
 import pytest
 
 from inspect_ai._util.asyncfiles import AsyncFilesystem
@@ -124,7 +125,11 @@ async def test_fs_copy_repo_downloads_tree_from_s3(
         await _put(fs, f"{src_root}/restic/host/snapshots/22", b"snap")
 
         written = await _fs_copy_repo(
-            src_root, "restic/host", str(new_repo), label="host"
+            src_root,
+            "restic/host",
+            str(new_repo),
+            anyio.CapacityLimiter(3),
+            label="host",
         )
 
     assert set(written) == {
@@ -164,7 +169,11 @@ async def test_fs_copy_repo_local_relative_source_lands_at_correct_paths(
 
     async with AsyncFilesystem():
         written = await _fs_copy_repo(
-            src_root, "restic/host", str(new_repo), label="host"
+            src_root,
+            "restic/host",
+            str(new_repo),
+            anyio.CapacityLimiter(3),
+            label="host",
         )
 
     assert set(written) == {
@@ -185,7 +194,13 @@ async def test_fs_copy_repo_raises_when_source_missing(
 
     async with AsyncFilesystem():
         try:
-            await _fs_copy_repo(src_root, "restic/host", str(new_repo), label="host")
+            await _fs_copy_repo(
+                src_root,
+                "restic/host",
+                str(new_repo),
+                anyio.CapacityLimiter(3),
+                label="host",
+            )
         except RuntimeError as e:
             assert "no files were found" in str(e)
         else:

@@ -10,8 +10,19 @@ from __future__ import annotations
 
 import anyio.to_thread
 
-from inspect_ai._util.asyncfiles import is_s3_filename
-from inspect_ai._util.file import filesystem
+from inspect_ai._util.asyncfiles import get_async_filesystem, is_s3_filename
+from inspect_ai._util.file import basename, filesystem
+
+
+async def async_dir_names(base: str) -> list[str]:
+    """Terminal names of ``base``'s immediate subdirectories (missing → [])."""
+    names: list[str] = []
+    try:
+        async for uri in get_async_filesystem().iter_dirs(base):
+            names.append(basename(uri))
+    except FileNotFoundError:
+        pass
+    return names
 
 
 async def async_mkdir(path: str, *, exist_ok: bool = True) -> None:

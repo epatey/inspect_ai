@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import sys
 from dataclasses import dataclass
+from logging import getLogger
 from typing import TYPE_CHECKING, Awaitable, Callable, Literal, TypeVar
 
 import anyio
@@ -40,6 +41,8 @@ if sys.version_info < (3, 11):
 if TYPE_CHECKING:
     from inspect_ai._eval.task.error import SampleErrorHandler
     from inspect_ai.log._log import EvalSample
+
+logger = getLogger(__name__)
 
 T = TypeVar("T")
 
@@ -286,21 +289,28 @@ class SampleRequeue:
 
         Uses the same own-dir resolution as the re-run itself
         (`_resume_if_checkpointed`), so the answer matches what the
-        requeue will actually do.
+        requeue will actually do. Advisory only (it feeds the directive's
+        ``resume_from_checkpoint`` field): a probe failure (e.g. a
+        transient S3 error) reports False rather than failing the whole
+        requeue directive — the re-run's own probe is authoritative.
         """
         if self._checkpoints_dir is None:
             return False
         from inspect_ai.util._checkpoint._layout import (
-            resolve_resumable_sample_dir,
             sample_checkpoints_dir,
+            scan_latest_committed_checkpoint,
         )
 
-        return (
-            await resolve_resumable_sample_dir(
-                sample_checkpoints_dir(self._checkpoints_dir, sample_id, epoch)
+        try:
+            return (
+                await scan_latest_committed_checkpoint(
+                    sample_checkpoints_dir(self._checkpoints_dir, sample_id, epoch)
+                )
+                is not None
             )
-            is not None
-        )
+        except Exception as ex:
+            logger.warning(f"Checkpoint probe failed for requeue directive: {ex}")
+            return False
 
     def accept(
         self, prior: "EvalSample", prior_status: Literal["error", "cancelled"]
