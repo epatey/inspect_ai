@@ -3,7 +3,7 @@
 ## [0.3.284](https://github.com/epatey/inspect_ai/compare/0.3.283...0.3.284) (2026-10-24)
 
 
-### ⚠ BREAKING CHANGES
+### Breaking Changes
 
 * dataset loaders now read a top-level `checkpoint` field as the sample's checkpoint configuration and raise when it isn't a valid one. Datasets that use `checkpoint` for unrelated data should pass `FieldSpec(checkpoint=None)` to skip the field, or `FieldSpec(checkpoint="<column>")` to read checkpoint settings from another column. Dataset records also can't set the checkpoint `trigger`; set it with `Task(checkpoint=CheckpointConfig(trigger=...))` or `eval(checkpoint=...)` instead.
 * Perplexity requests failing after Sonar moved to the Agent API ([#5703](https://github.com/epatey/inspect_ai/issues/5703))
